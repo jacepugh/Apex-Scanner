@@ -1135,7 +1135,7 @@ function refresh() {
 async function fetchLiveData() {
   try {
     // In production, this calls your Node.js backend which proxies to Polygon/Finnhub
-    const res = await fetch(`/api/scanner?source=${STATE.apiSource}&key=${STATE.apiKey}&` + new URLSearchParams({
+    const res = await fetch(`apex-scanner-production.up.railway.app/api/scanner?source=${STATE.apiSource}&key=${STATE.apiKey}&` + new URLSearchParams({
       priceMin: STATE.filters.priceMin,
       priceMax: STATE.filters.priceMax,
       volMin: STATE.filters.volMin,
