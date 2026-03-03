@@ -1169,7 +1169,22 @@ function init() {
     if (STATE.filtered[1]) pushAlert(STATE.filtered[1].ticker, 'pmh', `Breaking Pre-Market High — $${STATE.filtered[1].pmHigh.toFixed(2)}`);
   }, 5000);
 }
-
+// WebSocket connection to Railway
+const WS_URL = 'apex-scanner-production.up.railway.app';
+const ws = new WebSocket(WS_URL);
+ws.onopen = () => console.log('Connected to scanner server');
+ws.onmessage = (e) => {
+  const msg = JSON.parse(e.data);
+  if (msg.type === 'scan_results') {
+    STATE.stocks = msg.data;
+    applyFilters();
+  }
+  if (msg.type === 'alerts') {
+    msg.data.forEach(a => pushAlert(a.ticker, a.type, a.message));
+  }
+};
+ws.onerror = (e) => console.warn('WS error:', e);
+ws.onclose = () => setTimeout(() => location.reload(), 5000);
 init();
 </script>
 </body>
