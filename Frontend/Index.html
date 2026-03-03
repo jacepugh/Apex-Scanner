@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>APEX SCANNER — Small-Cap Momentum</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:        #060810;
+    --bg1:       #0b0f1a;
+    --bg2:       #0f1524;
+    --bg3:       #141d30;
+    --border:    #1e2d45;
+    --border2:   #2a3d5a;
+    --text:      #c8dff0;
+    --dim:       #4a6080;
+    --mid:       #7a9ab8;
+    --accent:    #00e5ff;
+    --accent2:   #0099bb;
+    --green:     #00e676;
+    --green2:    #00994d;
+    --red:       #ff3d5a;
+    --gold:      #ffd740;
+    --purple:    #b388ff;
+    --mono:      'Share Tech Mono', monospace;
+    --cond:      'Barlow Condensed', sans-serif;
+    --body:      'Barlow', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 13px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── SCANLINES OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0,229,255,0.012) 2px, rgba(0,229,255,0.012) 4px
+    );
+    pointer-events: none; z-index: 9999;
+  }
+
+  /* ── HEADER ── */
+  #header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px;
+    height: 52px;
+    background: var(--bg1);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+  }
+
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-mark {
+    width: 32px; height: 32px;
+    border: 2px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--cond); font-weight: 800; font-size: 14px;
+    color: var(--accent); letter-spacing: -1px;
+    position: relative;
+    clip-path: polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%);
+    background: rgba(0,229,255,0.05);
+  }
+  .logo-text { font-family: var(--cond); font-weight: 800; font-size: 20px; letter-spacing: 0.08em; color: var(--text); }
+  .logo-text span { color: var(--accent); }
+
+  .header-status {
+    display: flex; align-items: center; gap: 20px;
+  }
+
+  .market-mode {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 11px;
+    padding: 5px 12px;
+    border: 1px solid var(--border2);
+    border-radius: 3px;
+    background: var(--bg2);
+  }
+  .mode-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--gold);
+    box-shadow: 0 0 8px var(--gold);
+    animation: pulse 2s infinite;
+  }
+  .mode-dot.live { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .clock {
+    font-family: var(--mono); font-size: 14px; color: var(--accent);
+    letter-spacing: 0.05em;
+  }
+
+  .header-btns { display: flex; gap: 8px; }
+  .hbtn {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+    padding: 5px 12px; border: 1px solid var(--border2); border-radius: 3px;
+    background: transparent; color: var(--mid); cursor: pointer;
+    text-transform: uppercase; transition: all 0.15s;
+  }
+  .hbtn:hover, .hbtn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,229,255,0.05); }
+  .hbtn.alert-on { border-color: var(--gold); color: var(--gold); background: rgba(255,215,64,0.05); }
+
+  /* ── LAYOUT ── */
+  #app { display: flex; height: calc(100vh - 52px); }
+
+  /* ── SIDEBAR ── */
+  #sidebar {
+    width: 260px; flex-shrink: 0;
+    background: var(--bg1);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    display: flex; flex-direction: column;
+  }
+
+  .sidebar-section {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-label {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--dim); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-label::after { content:''; flex:1; height:1px; background: var(--border); }
+
+  .filter-row { margin-bottom: 12px; }
+  .filter-label {
+    font-family: var(--mono); font-size: 10px; color: var(--mid);
+    margin-bottom: 5px; display: flex; justify-content: space-between;
+  }
+  .filter-label span { color: var(--accent); }
+
+  input[type=range] {
+    width: 100%; accent-color: var(--accent); cursor: pointer;
+    height: 3px;
+  }
+
+  .dual-input { display: flex; gap: 6px; }
+  .num-input {
+    flex: 1; background: var(--bg2); border: 1px solid var(--border2);
+    color: var(--text); font-family: var(--mono); font-size: 11px;
+    padding: 5px 8px; border-radius: 3px; outline: none; width: 100%;
+    transition: border-color 0.15s;
+  }
+  .num-input:focus { border-color: var(--accent); }
+
+  .toggle-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 10px; font-family: var(--mono); font-size: 10px; color: var(--mid);
+  }
+  .toggle {
+    width: 32px; height: 16px; background: var(--bg3); border-radius: 8px;
+    position: relative; cursor: pointer; border: 1px solid var(--border2);
+    transition: background 0.2s;
+  }
+  .toggle.on { background: var(--accent2); border-color: var(--accent); }
+  .toggle::after {
+    content:''; position:absolute; top: 1px; left: 1px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--dim); transition: all 0.2s;
+  }
+  .toggle.on::after { left: 17px; background: var(--accent); }
+
+  /* PRESETS */
+  .preset-btn {
+    width: 100%; padding: 8px 10px; margin-bottom: 6px;
+    background: var(--bg2); border: 1px solid var(--border);
+    color: var(--mid); font-family: var(--mono); font-size: 10px;
+    text-align: left; cursor: pointer; border-radius: 3px;
+    transition: all 0.15s; letter-spacing: 0.05em;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .preset-btn:hover, .preset-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,229,255,0.04); }
+  .preset-tag {
+    font-size: 9px; padding: 1px 5px; border-radius: 2px;
+    background: rgba(0,229,255,0.1); color: var(--accent);
+  }
+
+  /* ── MAIN ── */
+  #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── STATS BAR ── */
+  #statsbar {
+    display: flex; gap: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg1);
+    flex-shrink: 0;
+  }
+  .stat-cell {
+    padding: 10px 20px; border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 2px; min-width: 120px;
+  }
+  .stat-cell:last-child { border-right: none; }
+  .stat-label { font-family: var(--mono); font-size: 9px; color: var(--dim); letter-spacing: 0.1em; text-transform: uppercase; }
+  .stat-value { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--text); }
+  .stat-value.green { color: var(--green); }
+  .stat-value.gold { color: var(--gold); }
+  .stat-value.accent { color: var(--accent); }
+
+  /* ── MODE TABS ── */
+  #modetabs {
+    display: flex; gap: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg1); flex-shrink: 0;
+  }
+  .mode-tab {
+    padding: 10px 24px; font-family: var(--cond); font-weight: 600;
+    font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase;
+    cursor: pointer; color: var(--dim); border: none; background: none;
+    border-bottom: 2px solid transparent; transition: all 0.15s;
+  }
+  .mode-tab:hover { color: var(--text); }
+  .mode-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── TABLE AREA ── */
+  #table-wrap { flex: 1; overflow-y: auto; }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  thead tr {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--bg2);
+    border-bottom: 2px solid var(--border2);
+  }
+
+  th {
+    padding: 9px 12px; text-align: left;
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--dim); white-space: nowrap;
+    cursor: pointer; user-select: none;
+    transition: color 0.15s;
+  }
+  th:hover { color: var(--accent); }
+  th.sort-asc::after { content: ' ↑'; color: var(--accent); }
+  th.sort-desc::after { content: ' ↓'; color: var(--accent); }
+
+  tbody tr {
+    border-bottom: 1px solid rgba(30,45,69,0.5);
+    cursor: pointer; transition: background 0.1s;
+  }
+  tbody tr:hover { background: rgba(0,229,255,0.03); }
+  tbody tr.flash-row { animation: rowflash 1.5s ease; }
+  @keyframes rowflash {
+    0%   { background: rgba(0,230,118,0.25); }
+    100% { background: transparent; }
+  }
+  tbody tr.pmh-break { animation: pmhflash 2s ease infinite; }
+  @keyframes pmhflash {
+    0%,100% { background: transparent; }
+    50%     { background: rgba(255,215,64,0.08); }
+  }
+
+  td {
+    padding: 10px 12px; font-family: var(--mono); font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .td-ticker {
+    font-family: var(--cond); font-weight: 800; font-size: 16px;
+    color: var(--text); letter-spacing: 0.05em;
+  }
+  .td-ticker.low-float { color: var(--green); }
+  .td-ticker.ultra-float { color: var(--gold); text-shadow: 0 0 12px rgba(255,215,64,0.4); }
+
+  .td-price { color: var(--text); font-size: 13px; }
+
+  .chg { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; }
+  .chg.pos { color: var(--green); }
+  .chg.neg { color: var(--red); }
+
+  .rvol-val { color: var(--text); }
+  .rvol-val.high { color: var(--accent); font-weight: 700; }
+  .rvol-val.extreme { color: var(--gold); font-weight: 700; }
+
+  .float-val { color: var(--mid); }
+  .float-val.low { color: var(--green); }
+  .float-val.ultra { color: var(--gold); font-weight: 700; }
+
+  .gap-val { }
+  .gap-val.big { color: var(--green); }
+
+  .catalyst-badge {
+    display: inline-block; padding: 2px 7px; border-radius: 2px;
+    font-size: 9px; letter-spacing: 0.08em; font-weight: 600;
+    text-transform: uppercase;
+  }
+  .cat-earnings  { background: rgba(179,136,255,0.15); color: var(--purple); border: 1px solid rgba(179,136,255,0.3); }
+  .cat-fda       { background: rgba(0,230,118,0.12); color: var(--green); border: 1px solid rgba(0,230,118,0.25); }
+  .cat-contract  { background: rgba(0,229,255,0.1); color: var(--accent); border: 1px solid rgba(0,229,255,0.2); }
+  .cat-sec       { background: rgba(255,215,64,0.1); color: var(--gold); border: 1px solid rgba(255,215,64,0.2); }
+  .cat-ma        { background: rgba(255,61,90,0.1); color: var(--red); border: 1px solid rgba(255,61,90,0.2); }
+  .cat-partner   { background: rgba(0,153,187,0.1); color: var(--accent2); border: 1px solid rgba(0,153,187,0.2); }
+
+  .pmh-up { color: var(--gold); }
+
+  /* ── DETAIL PANEL ── */
+  #detail-panel {
+    width: 340px; flex-shrink: 0;
+    background: var(--bg1);
+    border-left: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    transition: width 0.2s;
+  }
+  #detail-panel.hidden { width: 0; border-left: none; }
+
+  .dp-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .dp-ticker { font-family: var(--cond); font-weight: 800; font-size: 26px; color: var(--text); }
+  .dp-price  { font-family: var(--mono); font-size: 22px; color: var(--green); }
+
+  .dp-body { flex: 1; overflow-y: auto; padding: 14px 16px; }
+
+  .dp-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 7px 0; border-bottom: 1px solid rgba(30,45,69,0.5);
+    font-family: var(--mono); font-size: 11px;
+  }
+  .dp-row-label { color: var(--dim); }
+  .dp-row-val   { color: var(--text); }
+
+  .dp-section {
+    margin-top: 14px; margin-bottom: 8px;
+    font-family: var(--mono); font-size: 9px; color: var(--dim);
+    letter-spacing: 0.2em; text-transform: uppercase;
+  }
+
+  .news-item {
+    padding: 10px;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 4px; margin-bottom: 8px;
+    cursor: pointer; transition: border-color 0.15s;
+  }
+  .news-item:hover { border-color: var(--accent); }
+  .news-headline { font-size: 11px; color: var(--text); line-height: 1.5; margin-bottom: 5px; }
+  .news-meta { font-family: var(--mono); font-size: 9px; color: var(--dim); display: flex; gap: 10px; }
+  .news-source { color: var(--accent2); }
+
+  /* ── ALERTS PANEL ── */
+  #alerts-panel {
+    position: fixed; bottom: 20px; right: 20px;
+    width: 300px; z-index: 200;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .alert-toast {
+    background: var(--bg1); border: 1px solid var(--green);
+    border-left: 3px solid var(--green);
+    padding: 10px 14px; border-radius: 4px;
+    font-family: var(--mono); font-size: 11px;
+    animation: slideIn 0.3s ease, fadeOut 0.5s ease 4.5s forwards;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+  .alert-toast.pmh { border-color: var(--gold); border-left-color: var(--gold); }
+  .alert-toast.new-ticker { border-color: var(--accent); border-left-color: var(--accent); }
+  .at-title { color: var(--green); font-weight: 700; font-size: 13px; margin-bottom: 3px; }
+  .at-title.pmh { color: var(--gold); }
+  .at-title.new-ticker { color: var(--accent); }
+  .at-body { color: var(--mid); font-size: 10px; }
+  @keyframes slideIn { from { transform: translateX(100%); opacity:0; } to { transform: translateX(0); opacity:1; } }
+  @keyframes fadeOut { from { opacity:1; } to { opacity:0; pointer-events:none; } }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--dim); }
+
+  /* ── MINI CHART SPARKLINE ── */
+  .sparkline { display: inline-block; vertical-align: middle; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 80px 20px; color: var(--dim);
+    font-family: var(--mono); font-size: 12px; gap: 10px;
+  }
+  .empty-icon { font-size: 36px; opacity: 0.3; }
+
+  /* ── CONNECTION STATUS ── */
+  .conn-status {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .conn-dot { width: 5px; height: 5px; border-radius: 50%; }
+  .conn-dot.connected { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .conn-dot.disconnected { background: var(--red); }
+  .conn-dot.demo { background: var(--gold); box-shadow: 0 0 6px var(--gold); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 1100px) { #sidebar { width: 220px; } #detail-panel { width: 280px; } }
+  @media (max-width: 800px)  { #sidebar { display: none; } #detail-panel.hidden { display: none; } }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header id="header">
+  <div class="logo">
+    <div class="logo-mark">AX</div>
+    <div class="logo-text">APEX<span>SCAN</span></div>
+  </div>
+
+  <div class="header-status">
+    <div class="market-mode" id="market-mode-badge">
+      <div class="mode-dot" id="mode-dot"></div>
+      <span id="mode-label">DEMO MODE</span>
+    </div>
+    <div class="clock" id="clock">--:--:-- ET</div>
+    <div class="conn-status">
+      <div class="conn-dot demo" id="conn-dot"></div>
+      <span id="conn-label">DEMO</span>
+    </div>
+    <div class="header-btns">
+      <button class="hbtn" id="sound-btn" onclick="toggleSound()">🔇 SOUND</button>
+      <button class="hbtn" id="alerts-btn" onclick="toggleAlerts()">ALERTS ON</button>
+      <button class="hbtn" onclick="document.getElementById('detail-panel').classList.toggle('hidden')">PANEL</button>
+      <button class="hbtn" onclick="openSettings()">⚙ API</button>
+    </div>
+  </div>
+</header>
+
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+
+    <!-- PRESETS -->
+    <div class="sidebar-section">
+      <div class="section-label">Presets</div>
+      <button class="preset-btn" onclick="loadPreset('ignition')" id="preset-ignition">
+        🔥 First Leg Ignition <span class="preset-tag">P1</span>
+      </button>
+      <button class="preset-btn active" onclick="loadPreset('premarket')" id="preset-premarket">
+        🌅 Pre-Market Gap+Go <span class="preset-tag">P2</span>
+      </button>
+      <button class="preset-btn" onclick="loadPreset('midday')" id="preset-midday">
+        📈 Midday Vol Reclaim <span class="preset-tag">P3</span>
+      </button>
+    </div>
+
+    <!-- PRICE FILTER -->
+    <div class="sidebar-section">
+      <div class="section-label">Price Range</div>
+      <div class="filter-row">
+        <div class="filter-label">Range <span id="price-display">$0.50 – $25.00</span></div>
+        <div class="dual-input">
+          <input type="number" class="num-input" id="price-min" value="0.50" step="0.50" onchange="updateFilters()" />
+          <input type="number" class="num-input" id="price-max" value="25.00" step="1" onchange="updateFilters()" />
+        </div>
+      </div>
+    </div>
+
+    <!-- VOLUME FILTERS -->
+    <div class="sidebar-section">
+      <div class="section-label">Volume</div>
+      <div class="filter-row">
+        <div class="filter-label">Min Volume <span id="vol-display">1M</span></div>
+        <input type="range" id="vol-min" min="100000" max="10000000" step="100000" value="1000000" oninput="updateFilters()" />
+      </div>
+      <div class="filter-row">
+        <div class="filter-label">Min Rel Vol <span id="rvol-display">3.0×</span></div>
+        <input type="range" id="rvol-min" min="1" max="15" step="0.5" value="3" oninput="updateFilters()" />
+      </div>
+    </div>
+
+    <!-- GAP FILTER -->
+    <div class="sidebar-section">
+      <div class="section-label">Gap %</div>
+      <div class="filter-row">
+        <div class="filter-label">Min Gap <span id="gap-display">5%</span></div>
+        <input type="range" id="gap-min" min="0" max="50" step="1" value="5" oninput="updateFilters()" />
+      </div>
+    </div>
+
+    <!-- FLOAT FILTER -->
+    <div class="sidebar-section">
+      <div class="section-label">Float</div>
+      <div class="filter-row">
+        <div class="filter-label">Max Float <span id="float-display">100M</span></div>
+        <input type="range" id="float-max" min="1000000" max="500000000" step="1000000" value="100000000" oninput="updateFilters()" />
+      </div>
+    </div>
+
+    <!-- TOGGLES -->
+    <div class="sidebar-section">
+      <div class="section-label">Filters</div>
+      <div class="toggle-row">
+        <span>Catalyst Required</span>
+        <div class="toggle on" id="t-catalyst" onclick="toggleFilter('catalyst')"></div>
+      </div>
+      <div class="toggle-row">
+        <span>Exclude ETFs/Warrants</span>
+        <div class="toggle on" id="t-etf" onclick="toggleFilter('etf')"></div>
+      </div>
+      <div class="toggle-row">
+        <span>PMH Break Alerts</span>
+        <div class="toggle on" id="t-pmh" onclick="toggleFilter('pmh')"></div>
+      </div>
+      <div class="toggle-row">
+        <span>Volume Spike Alerts</span>
+        <div class="toggle on" id="t-vspike" onclick="toggleFilter('vspike')"></div>
+      </div>
+    </div>
+
+    <!-- REFRESH -->
+    <div class="sidebar-section">
+      <div class="section-label">Refresh Rate</div>
+      <div class="filter-row">
+        <div class="filter-label">Interval <span id="refresh-display">15s</span></div>
+        <input type="range" id="refresh-rate" min="10" max="60" step="5" value="15" oninput="updateRefreshRate()" />
+      </div>
+    </div>
+
+    <!-- API CONFIG -->
+    <div class="sidebar-section" style="margin-top:auto;">
+      <div class="section-label">Data Source</div>
+      <div class="filter-row">
+        <select class="num-input" id="api-source" onchange="updateApiSource()">
+          <option value="demo">Demo (Mock Data)</option>
+          <option value="polygon">Polygon.io</option>
+          <option value="finnhub">Finnhub</option>
+          <option value="alphaVantage">Alpha Vantage</option>
+        </select>
+      </div>
+      <div class="filter-row" id="api-key-row" style="display:none">
+        <input type="password" class="num-input" id="api-key" placeholder="Enter API Key..." />
+        <button class="hbtn" style="margin-top:6px;width:100%" onclick="saveApiKey()">CONNECT</button>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- MAIN -->
+  <main id="main">
+
+    <!-- STATS BAR -->
+    <div id="statsbar">
+      <div class="stat-cell">
+        <div class="stat-label">Scanning</div>
+        <div class="stat-value accent" id="stat-scanning">8,400</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Matches</div>
+        <div class="stat-value green" id="stat-matches">0</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Alerts Today</div>
+        <div class="stat-value gold" id="stat-alerts">0</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Top Gapper</div>
+        <div class="stat-value" id="stat-top-gap">—</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Last Refresh</div>
+        <div class="stat-value" id="stat-refresh" style="font-size:13px">—</div>
+      </div>
+      <div class="stat-cell" style="margin-left:auto">
+        <div class="stat-label">Market Status</div>
+        <div class="stat-value" id="stat-market" style="font-size:13px">—</div>
+      </div>
+    </div>
+
+    <!-- MODE TABS -->
+    <div id="modetabs">
+      <button class="mode-tab active" onclick="setMode('premarket')" id="tab-premarket">🌅 Pre-Market</button>
+      <button class="mode-tab" onclick="setMode('regular')" id="tab-regular">📊 Regular Market</button>
+      <button class="mode-tab" onclick="setMode('all')" id="tab-all">⚡ All Matches</button>
+    </div>
+
+    <!-- TABLE -->
+    <div id="table-wrap">
+      <table id="scanner-table">
+        <thead>
+          <tr>
+            <th onclick="sortBy('ticker')">Ticker</th>
+            <th onclick="sortBy('price')">Price</th>
+            <th onclick="sortBy('change')">% Chg</th>
+            <th onclick="sortBy('gap')">Gap %</th>
+            <th onclick="sortBy('volume')">Volume</th>
+            <th onclick="sortBy('rvol')">Rel Vol</th>
+            <th onclick="sortBy('float')">Float</th>
+            <th onclick="sortBy('catalyst')">Catalyst</th>
+            <th onclick="sortBy('newsTime')">News Age</th>
+            <th onclick="sortBy('pmHigh')">PM High</th>
+            <th onclick="sortBy('pmLow')">PM Low</th>
+            <th>Trend</th>
+          </tr>
+        </thead>
+        <tbody id="scanner-body">
+          <!-- populated by JS -->
+        </tbody>
+      </table>
+      <div class="empty-state" id="empty-state" style="display:none">
+        <div class="empty-icon">🔭</div>
+        <div>No stocks match current filters</div>
+        <div style="color:var(--dim);font-size:10px">Try relaxing filter criteria</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- DETAIL PANEL -->
+  <div id="detail-panel">
+    <div class="dp-header">
+      <div>
+        <div class="dp-ticker" id="dp-ticker">—</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--dim)" id="dp-name">Select a stock</div>
+      </div>
+      <div class="dp-price" id="dp-price">—</div>
+    </div>
+    <div class="dp-body" id="dp-body">
+      <div style="color:var(--dim);font-family:var(--mono);font-size:11px;margin-top:20px;text-align:center">
+        Click any row to view details
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ALERTS PANEL -->
+<div id="alerts-panel"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// APEX SCANNER — Core Application
+// ═══════════════════════════════════════════════════════════════
+
+const STATE = {
+  mode: 'premarket',
+  sort: { col: 'rvol', dir: 'desc' },
+  filters: {
+    priceMin: 0.5, priceMax: 25,
+    volMin: 1000000, rvolMin: 3,
+    gapMin: 5, floatMax: 100000000,
+    catalyst: true, excludeEtf: true,
+    pmhAlerts: true, vspikeAlerts: true,
+  },
+  stocks: [],
+  filtered: [],
+  selected: null,
+  alertsEnabled: true,
+  soundEnabled: false,
+  alertCount: 0,
+  refreshInterval: 15000,
+  refreshTimer: null,
+  presets: {
+    ignition:   { priceMin:1, priceMax:20, volMin:2000000, rvolMin:5, gapMin:8, floatMax:20000000 },
+    premarket:  { priceMin:0.5, priceMax:25, volMin:1000000, rvolMin:3, gapMin:5, floatMax:100000000 },
+    midday:     { priceMin:2, priceMax:25, volMin:500000, rvolMin:2, gapMin:3, floatMax:50000000 },
+  },
+  seenTickers: new Set(),
+  apiSource: 'demo',
+  apiKey: '',
+};
+
+// ─── MOCK DATA ENGINE ─────────────────────────────────────────
+const CATALYSTS = [
+  { type: 'earnings', label: 'Earnings Beat', class: 'cat-earnings' },
+  { type: 'fda',      label: 'FDA Approval',  class: 'cat-fda' },
+  { type: 'contract', label: 'Contract Win',  class: 'cat-contract' },
+  { type: 'sec',      label: 'SEC 8-K',       class: 'cat-sec' },
+  { type: 'ma',       label: 'M&A Deal',      class: 'cat-ma' },
+  { type: 'partner',  label: 'Partnership',   class: 'cat-partner' },
+];
+
+const MOCK_TICKERS = [
+  { ticker:'MTEK',  name:'Microtek Inc',          float:4.2e6,  sector:'Technology' },
+  { ticker:'BFRI',  name:'Biofrontera AG',         float:8.1e6,  sector:'Biotech' },
+  { ticker:'DPST',  name:'Deepstate Corp',         float:12.5e6, sector:'Financial' },
+  { ticker:'TTOO',  name:'T2 Biosystems',          float:18.3e6, sector:'Biotech' },
+  { ticker:'BURU',  name:'Nuburu Inc',             float:6.7e6,  sector:'Technology' },
+  { ticker:'ELEV',  name:'Elevation Oncology',     float:22.1e6, sector:'Biotech' },
+  { ticker:'RDBX',  name:'Redbox Entertainment',   float:9.4e6,  sector:'Media' },
+  { ticker:'CODA',  name:'Coda Octopus Group',     float:14.8e6, sector:'Technology' },
+  { ticker:'GFAI',  name:'Guardforce AI Co.',      float:31.2e6, sector:'AI/Tech' },
+  { ticker:'MGRX',  name:'Mangoceuticals Inc',     float:7.3e6,  sector:'Healthcare' },
+  { ticker:'VVPR',  name:'VivoPower International',float:5.1e6,  sector:'Energy' },
+  { ticker:'MOTS',  name:'Motus GI Holdings',      float:16.9e6, sector:'MedTech' },
+  { ticker:'BNOX',  name:'Brockton Technologies',  float:3.8e6,  sector:'Technology' },
+  { ticker:'NXTP',  name:'NextPlay Technologies',  float:28.4e6, sector:'AdTech' },
+  { ticker:'GOVX',  name:'GeoVax Labs',            float:11.2e6, sector:'Biotech' },
+];
+
+const MOCK_NEWS = {
+  MTEK:  [{ h:"Microtek Secures $50M Government Contract for Cybersecurity Infrastructure", s:"GlobeNewswire", t:"2h ago" }],
+  BFRI:  [{ h:"Biofrontera Reports Strong Q4 Results; Revenue Up 34% YoY", s:"PR Newswire", t:"1h ago" }],
+  DPST:  [{ h:"Deepstate Files 8-K: Announces Strategic Acquisition of RivalTech Inc", s:"SEC EDGAR", t:"3h ago" }],
+  TTOO:  [{ h:"T2 Biosystems Receives FDA Breakthrough Device Designation for Sepsis Test", s:"BusinessWire", t:"30m ago" }],
+  BURU:  [{ h:"Nuburu Partners with Leading Aerospace Firm for Laser Technology Integration", s:"PR Newswire", t:"4h ago" }],
+  ELEV:  [{ h:"Elevation Oncology Reports Positive Phase 2 Data for EO-3021 Trial", s:"GlobeNewswire", t:"2h ago" }],
+  RDBX:  [{ h:"Redbox Entertainment Files S-1 for $75M Public Offering", s:"SEC EDGAR", t:"6h ago" }],
+  CODA:  [{ h:"Coda Octopus Wins Multi-Year Contract with US Navy for Sonar Systems", s:"BusinessWire", t:"1h ago" }],
+  GFAI:  [{ h:"Guardforce AI Announces Major Partnership with Singapore Government on AI Security", s:"PR Newswire", t:"3h ago" }],
+  MGRX:  [{ h:"Mangoceuticals Reports Q3 Beat with 41% Revenue Growth", s:"GlobeNewswire", t:"5h ago" }],
+  VVPR:  [{ h:"VivoPower Secures $120M Sustainable Energy Contract in Australia", s:"BusinessWire", t:"45m ago" }],
+  MOTS:  [{ h:"Motus GI Receives FDA 510(k) Clearance for Pure-Vu System", s:"PR Newswire", t:"2h ago" }],
+  BNOX:  [{ h:"Brockton Technologies Announces Record Q4; AI Revenue Surges 280%", s:"GlobeNewswire", t:"1h ago" }],
+  NXTP:  [{ h:"NextPlay Technologies Signs Multi-Year Partnership with Major Ad Network", s:"BusinessWire", t:"4h ago" }],
+  GOVX:  [{ h:"GeoVax Announces Positive Phase 1 Results for COVID-19 Vaccine Candidate", s:"PR Newswire", t:"2h ago" }],
+};
+
+const CATALYST_MAP = {
+  MTEK:'contract', BFRI:'earnings', DPST:'sec', TTOO:'fda', BURU:'partner',
+  ELEV:'fda', RDBX:'sec', CODA:'contract', GFAI:'partner', MGRX:'earnings',
+  VVPR:'contract', MOTS:'fda', BNOX:'earnings', NXTP:'partner', GOVX:'fda',
+};
+
+let rng = 12345;
+function rand(min, max) {
+  rng = (rng * 1664525 + 1013904223) & 0xffffffff;
+  const t = ((rng >>> 0) / 0xffffffff);
+  return min + t * (max - min);
+}
+
+function generateMockData() {
+  return MOCK_TICKERS.map(s => {
+    const prevClose = rand(1.5, 22);
+    const gapPct    = rand(5, 45);
+    const price     = prevClose * (1 + gapPct / 100) * (1 + rand(-0.03, 0.08));
+    const pmHigh    = price * rand(1.01, 1.15);
+    const pmLow     = prevClose * (1 + gapPct * 0.3 / 100);
+    const volume    = Math.floor(rand(800000, 25000000));
+    const rvol      = rand(2.5, 18);
+    const catType   = CATALYST_MAP[s.ticker];
+    const cat       = CATALYSTS.find(c => c.type === catType) || CATALYSTS[0];
+    const mktCap    = s.float * price;
+    const newsAge   = Math.floor(rand(0, 10));
+    const spark     = Array.from({length:12}, () => rand(-1,1));
+
+    return {
+      ...s, prevClose, price, gapPct, pmHigh, pmLow,
+      volume, rvol, change: ((price - prevClose) / prevClose) * 100,
+      mktCap, catalyst: cat, newsAge,
+      abovePmh: price > pmHigh * 0.98,
+      spark, news: MOCK_NEWS[s.ticker] || [],
+    };
+  });
+}
+
+function updateMockPrices() {
+  STATE.stocks = STATE.stocks.map(s => {
+    const delta = rand(-0.8, 1.5);
+    const newPrice = Math.max(0.1, s.price * (1 + delta / 100));
+    const wasAbove = s.abovePmh;
+    const abovePmh = newPrice > s.pmHigh;
+    if (!wasAbove && abovePmh && STATE.filters.pmhAlerts) {
+      pushAlert(s.ticker, 'pmh', `Breaking Pre-Market High — $${newPrice.toFixed(2)}`);
+    }
+    const newVol = s.volume + Math.floor(rand(10000, 200000));
+    const newRvol = s.rvol * (1 + rand(-0.05, 0.1));
+    if (newRvol > 10 && s.rvol <= 10 && STATE.filters.vspikeAlerts) {
+      pushAlert(s.ticker, 'vspike', `Volume Spike — ${newRvol.toFixed(1)}× Relative Volume`);
+    }
+    return {
+      ...s, price: newPrice, volume: newVol, rvol: newRvol,
+      change: ((newPrice - s.prevClose) / s.prevClose) * 100,
+      abovePmh,
+      spark: [...s.spark.slice(1), rand(-1, 1)],
+    };
+  });
+}
+
+// ─── FILTER & SORT ────────────────────────────────────────────
+function applyFilters() {
+  const f = STATE.filters;
+  STATE.filtered = STATE.stocks.filter(s => {
+    if (s.price < f.priceMin || s.price > f.priceMax) return false;
+    if (s.volume < f.volMin) return false;
+    if (s.rvol < f.rvolMin) return false;
+    if (s.gapPct < f.gapMin) return false;
+    if (s.float > f.floatMax) return false;
+    if (f.catalyst && !s.catalyst) return false;
+    return true;
+  });
+
+  // Mode filter
+  if (STATE.mode === 'premarket') {
+    STATE.filtered = STATE.filtered.filter(s => s.gapPct >= 5);
+  }
+
+  applySortInternal();
+
+  document.getElementById('stat-matches').textContent = STATE.filtered.length;
+
+  const top = [...STATE.filtered].sort((a,b) => b.gapPct - a.gapPct)[0];
+  document.getElementById('stat-top-gap').textContent =
+    top ? `${top.ticker} +${top.gapPct.toFixed(1)}%` : '—';
+
+  // Check new tickers
+  STATE.filtered.forEach(s => {
+    if (!STATE.seenTickers.has(s.ticker)) {
+      STATE.seenTickers.add(s.ticker);
+      if (STATE.seenTickers.size > 1) { // don't alert on initial load
+        pushAlert(s.ticker, 'new-ticker', `New setup — Gap ${s.gapPct.toFixed(1)}%, RVOL ${s.rvol.toFixed(1)}×`);
+      }
+    }
+  });
+
+  renderTable();
+}
+
+function applySortInternal() {
+  const { col, dir } = STATE.sort;
+  STATE.filtered.sort((a, b) => {
+    let va = a[col] ?? 0, vb = b[col] ?? 0;
+    if (col === 'catalyst') { va = a.catalyst?.type || ''; vb = b.catalyst?.type || ''; }
+    if (col === 'ticker') { va = a.ticker; vb = b.ticker; }
+    if (typeof va === 'string') return dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+    return dir === 'asc' ? va - vb : vb - va;
+  });
+}
+
+function sortBy(col) {
+  if (STATE.sort.col === col) STATE.sort.dir = STATE.sort.dir === 'asc' ? 'desc' : 'asc';
+  else { STATE.sort.col = col; STATE.sort.dir = 'desc'; }
+  document.querySelectorAll('th').forEach(th => th.className = '');
+  const ths = document.querySelectorAll('th');
+  const cols = ['ticker','price','change','gap','volume','rvol','float','catalyst','newsTime','pmHigh','pmLow','spark'];
+  const idx = cols.indexOf(col);
+  if (idx >= 0) ths[idx].className = `sort-${STATE.sort.dir}`;
+  applySortInternal();
+  renderTable();
+}
+
+// ─── RENDER ───────────────────────────────────────────────────
+function fmtVol(v) {
+  if (v >= 1e6) return (v/1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return (v/1e3).toFixed(0) + 'K';
+  return v;
+}
+function fmtFloat(v) {
+  if (v >= 1e6) return (v/1e6).toFixed(1) + 'M';
+  return v;
+}
+function fmtMktCap(v) {
+  if (v >= 1e9) return '$' + (v/1e9).toFixed(2) + 'B';
+  if (v >= 1e6) return '$' + (v/1e6).toFixed(1) + 'M';
+  return '$' + v.toFixed(0);
+}
+
+function sparklineSVG(data) {
+  const w = 60, h = 20;
+  const min = Math.min(...data), max = Math.max(...data);
+  const range = max - min || 1;
+  const pts = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * w;
+    const y = h - ((v - min) / range) * h;
+    return `${x},${y}`;
+  }).join(' ');
+  const color = data[data.length-1] > data[0] ? 'var(--green)' : 'var(--red)';
+  return `<svg class="sparkline" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+    <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" opacity="0.8"/>
+  </svg>`;
+}
+
+function renderTable() {
+  const body = document.getElementById('scanner-body');
+  const empty = document.getElementById('empty-state');
+
+  if (STATE.filtered.length === 0) {
+    body.innerHTML = '';
+    empty.style.display = 'flex';
+    return;
+  }
+  empty.style.display = 'none';
+
+  body.innerHTML = STATE.filtered.map(s => {
+    const floatM = s.float / 1e6;
+    const isUltraFloat = floatM < 10;
+    const isLowFloat   = floatM < 20;
+    const tickerClass  = isUltraFloat ? 'ultra-float' : isLowFloat ? 'low-float' : '';
+    const rvolClass    = s.rvol >= 10 ? 'extreme' : s.rvol >= 5 ? 'high' : '';
+    const floatClass   = isUltraFloat ? 'ultra' : isLowFloat ? 'low' : '';
+    const rowClass     = s.abovePmh ? 'pmh-break' : '';
+    const cat = s.catalyst;
+
+    return `<tr class="${rowClass}" onclick="selectStock('${s.ticker}')">
+      <td><span class="td-ticker ${tickerClass}">${s.ticker}</span>
+          ${isUltraFloat ? '<span style="font-size:8px;color:var(--gold);margin-left:4px">★</span>' : ''}</td>
+      <td class="td-price">$${s.price.toFixed(2)}</td>
+      <td><span class="chg ${s.change >= 0 ? 'pos' : 'neg'}">${s.change >= 0 ? '▲' : '▼'} ${Math.abs(s.change).toFixed(1)}%</span></td>
+      <td class="gap-val ${s.gapPct >= 15 ? 'big' : ''}">+${s.gapPct.toFixed(1)}%</td>
+      <td>${fmtVol(s.volume)}</td>
+      <td><span class="rvol-val ${rvolClass}">${s.rvol.toFixed(1)}×</span></td>
+      <td><span class="float-val ${floatClass}">${fmtFloat(s.float)}</span></td>
+      <td>${cat ? `<span class="catalyst-badge ${cat.class}">${cat.label}</span>` : '—'}</td>
+      <td style="color:var(--dim)">${s.newsAge === 0 ? '<span style="color:var(--green)">Today</span>' : s.newsAge + 'd ago'}</td>
+      <td class="${s.abovePmh ? 'pmh-up' : ''}">$${s.pmHigh.toFixed(2)}${s.abovePmh ? ' ▲' : ''}</td>
+      <td style="color:var(--dim)">$${s.pmLow.toFixed(2)}</td>
+      <td>${sparklineSVG(s.spark)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── DETAIL PANEL ─────────────────────────────────────────────
+function selectStock(ticker) {
+  const s = STATE.filtered.find(x => x.ticker === ticker);
+  if (!s) return;
+  STATE.selected = ticker;
+
+  document.getElementById('dp-ticker').textContent = s.ticker;
+  document.getElementById('dp-name').textContent = s.name;
+  document.getElementById('dp-price').textContent = `$${s.price.toFixed(2)}`;
+
+  const rows = [
+    ['Change', `${s.change >= 0 ? '+' : ''}${s.change.toFixed(2)}%`],
+    ['Gap %', `+${s.gapPct.toFixed(1)}%`],
+    ['Volume', fmtVol(s.volume)],
+    ['Rel Volume', `${s.rvol.toFixed(1)}×`],
+    ['Float', fmtFloat(s.float)],
+    ['Mkt Cap', fmtMktCap(s.mktCap)],
+    ['PM High', `$${s.pmHigh.toFixed(2)}`],
+    ['PM Low', `$${s.pmLow.toFixed(2)}`],
+    ['Prev Close', `$${s.prevClose.toFixed(2)}`],
+    ['Sector', s.sector],
+  ];
+
+  const newsHtml = (s.news || []).map(n =>
+    `<div class="news-item" onclick="window.open('https://www.google.com/search?q=${encodeURIComponent(s.ticker+' '+n.h)}','_blank')">
+      <div class="news-headline">${n.h}</div>
+      <div class="news-meta">
+        <span class="news-source">${n.s}</span>
+        <span>${n.t}</span>
+      </div>
+    </div>`
+  ).join('');
+
+  document.getElementById('dp-body').innerHTML = `
+    ${rows.map(([l,v]) => `<div class="dp-row"><span class="dp-row-label">${l}</span><span class="dp-row-val">${v}</span></div>`).join('')}
+    <div class="dp-section">News Catalyst</div>
+    ${newsHtml || '<div style="color:var(--dim);font-size:11px">No news found</div>'}
+    <div class="dp-section" style="margin-top:14px">Actions</div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="hbtn" style="flex:1" onclick="window.open('https://finance.yahoo.com/quote/${s.ticker}','_blank')">Yahoo Finance</button>
+      <button class="hbtn" style="flex:1" onclick="window.open('https://www.tradingview.com/chart/?symbol=${s.ticker}','_blank')">Chart</button>
+    </div>
+    <button class="hbtn" style="width:100%;margin-top:8px" onclick="window.open('https://finviz.com/quote.ashx?t=${s.ticker}','_blank')">Finviz</button>
+  `;
+}
+
+// ─── ALERTS ───────────────────────────────────────────────────
+function pushAlert(ticker, type, msg) {
+  if (!STATE.alertsEnabled) return;
+  STATE.alertCount++;
+  document.getElementById('stat-alerts').textContent = STATE.alertCount;
+
+  if (STATE.soundEnabled) {
+    try {
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = type === 'pmh' ? 880 : type === 'new-ticker' ? 660 : 440;
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.start(); osc.stop(ctx.currentTime + 0.4);
+    } catch(e) {}
+  }
+
+  const panel = document.getElementById('alerts-panel');
+  const el = document.createElement('div');
+  el.className = `alert-toast ${type}`;
+  el.innerHTML = `<div class="at-title ${type}">${type === 'pmh' ? '⚡ PMH BREAK' : type === 'new-ticker' ? '🆕 NEW SETUP' : '📊 VOL SPIKE'}: ${ticker}</div>
+                  <div class="at-body">${msg}</div>`;
+  panel.appendChild(el);
+  setTimeout(() => el.remove(), 5500);
+}
+
+function toggleSound() {
+  STATE.soundEnabled = !STATE.soundEnabled;
+  const btn = document.getElementById('sound-btn');
+  btn.textContent = STATE.soundEnabled ? '🔊 SOUND' : '🔇 SOUND';
+  btn.classList.toggle('active', STATE.soundEnabled);
+}
+
+function toggleAlerts() {
+  STATE.alertsEnabled = !STATE.alertsEnabled;
+  const btn = document.getElementById('alerts-btn');
+  btn.textContent = STATE.alertsEnabled ? 'ALERTS ON' : 'ALERTS OFF';
+  btn.classList.toggle('alert-on', STATE.alertsEnabled);
+}
+
+// ─── FILTERS ──────────────────────────────────────────────────
+function updateFilters() {
+  const f = STATE.filters;
+  f.priceMin  = parseFloat(document.getElementById('price-min').value) || 0.5;
+  f.priceMax  = parseFloat(document.getElementById('price-max').value) || 25;
+  f.volMin    = parseInt(document.getElementById('vol-min').value);
+  f.rvolMin   = parseFloat(document.getElementById('rvol-min').value);
+  f.gapMin    = parseInt(document.getElementById('gap-min').value);
+  f.floatMax  = parseInt(document.getElementById('float-max').value);
+
+  document.getElementById('price-display').textContent = `$${f.priceMin} – $${f.priceMax}`;
+  document.getElementById('vol-display').textContent = fmtVol(f.volMin);
+  document.getElementById('rvol-display').textContent = f.rvolMin + '×';
+  document.getElementById('gap-display').textContent = f.gapMin + '%';
+  document.getElementById('float-display').textContent = fmtFloat(f.floatMax);
+
+  applyFilters();
+}
+
+function toggleFilter(name) {
+  const el = document.getElementById(`t-${name}`);
+  const isOn = el.classList.toggle('on');
+  if (name === 'catalyst') STATE.filters.catalyst = isOn;
+  if (name === 'etf')      STATE.filters.excludeEtf = isOn;
+  if (name === 'pmh')      STATE.filters.pmhAlerts = isOn;
+  if (name === 'vspike')   STATE.filters.vspikeAlerts = isOn;
+  applyFilters();
+}
+
+function loadPreset(name) {
+  const p = STATE.presets[name];
+  if (!p) return;
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`preset-${name}`)?.classList.add('active');
+
+  document.getElementById('price-min').value = p.priceMin;
+  document.getElementById('price-max').value = p.priceMax;
+  document.getElementById('vol-min').value = p.volMin;
+  document.getElementById('rvol-min').value = p.rvolMin;
+  document.getElementById('gap-min').value = p.gapMin;
+  document.getElementById('float-max').value = p.floatMax;
+  updateFilters();
+}
+
+function setMode(mode) {
+  STATE.mode = mode;
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`tab-${mode}`)?.classList.add('active');
+  applyFilters();
+}
+
+function updateRefreshRate() {
+  const v = parseInt(document.getElementById('refresh-rate').value);
+  STATE.refreshInterval = v * 1000;
+  document.getElementById('refresh-display').textContent = v + 's';
+  clearInterval(STATE.refreshTimer);
+  STATE.refreshTimer = setInterval(refresh, STATE.refreshInterval);
+}
+
+function updateApiSource() {
+  STATE.apiSource = document.getElementById('api-source').value;
+  const keyRow = document.getElementById('api-key-row');
+  keyRow.style.display = STATE.apiSource === 'demo' ? 'none' : 'block';
+  updateConnectionStatus();
+}
+
+function saveApiKey() {
+  STATE.apiKey = document.getElementById('api-key').value;
+  alert(`API key saved. In the full backend version, this connects to ${STATE.apiSource}.\nSee docs/API_SETUP.md for integration instructions.`);
+}
+
+function openSettings() {
+  document.getElementById('api-source').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ─── CONNECTION STATUS ─────────────────────────────────────────
+function updateConnectionStatus() {
+  const dot = document.getElementById('conn-dot');
+  const label = document.getElementById('conn-label');
+  const modeBadge = document.getElementById('mode-label');
+  const modeDot = document.getElementById('mode-dot');
+
+  if (STATE.apiSource === 'demo') {
+    dot.className = 'conn-dot demo';
+    label.textContent = 'DEMO';
+    modeBadge.textContent = 'DEMO MODE';
+    modeDot.className = 'mode-dot';
+  } else if (STATE.apiKey) {
+    dot.className = 'conn-dot connected';
+    label.textContent = 'LIVE';
+    modeBadge.textContent = getMarketMode().toUpperCase();
+    modeDot.className = 'mode-dot live';
+  } else {
+    dot.className = 'conn-dot disconnected';
+    label.textContent = 'NO KEY';
+  }
+}
+
+// ─── MARKET CLOCK ─────────────────────────────────────────────
+function getMarketMode() {
+  const now = new Date();
+  const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const h = et.getHours(), m = et.getMinutes();
+  const mins = h * 60 + m;
+  if (mins >= 240 && mins < 570) return 'Pre-Market';
+  if (mins >= 570 && mins < 960) return 'Regular Market';
+  if (mins >= 960 && mins < 1200) return 'After-Hours';
+  return 'Market Closed';
+}
+
+function updateClock() {
+  const now = new Date();
+  const et = now.toLocaleString('en-US', { timeZone: 'America/New_York', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: false });
+  document.getElementById('clock').textContent = et + ' ET';
+  const mode = getMarketMode();
+  document.getElementById('stat-market').textContent = mode;
+  document.getElementById('stat-market').style.color =
+    mode === 'Regular Market' ? 'var(--green)' :
+    mode === 'Pre-Market' ? 'var(--gold)' : 'var(--dim)';
+}
+
+// ─── REFRESH CYCLE ────────────────────────────────────────────
+function refresh() {
+  if (STATE.apiSource === 'demo') {
+    updateMockPrices();
+  } else {
+    fetchLiveData(); // defined below for real API
+  }
+  applyFilters();
+  const now = new Date();
+  document.getElementById('stat-refresh').textContent =
+    now.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+}
+
+// ─── REAL API STUB (backend proxy) ────────────────────────────
+async function fetchLiveData() {
+  try {
+    // In production, this calls your Node.js backend which proxies to Polygon/Finnhub
+    const res = await fetch(`/api/scanner?source=${STATE.apiSource}&key=${STATE.apiKey}&` + new URLSearchParams({
+      priceMin: STATE.filters.priceMin,
+      priceMax: STATE.filters.priceMax,
+      volMin: STATE.filters.volMin,
+      rvolMin: STATE.filters.rvolMin,
+      gapMin: STATE.filters.gapMin,
+      floatMax: STATE.filters.floatMax,
+    }));
+    if (res.ok) {
+      STATE.stocks = await res.json();
+    }
+  } catch(e) {
+    console.warn('API fetch failed, using demo data:', e.message);
+  }
+}
+
+// ─── INIT ─────────────────────────────────────────────────────
+function init() {
+  STATE.stocks = generateMockData();
+  applyFilters();
+  updateClock();
+  updateConnectionStatus();
+
+  setInterval(updateClock, 1000);
+  STATE.refreshTimer = setInterval(refresh, STATE.refreshInterval);
+
+  // Demo: fire a couple startup alerts after delay
+  setTimeout(() => {
+    if (STATE.filtered[0]) pushAlert(STATE.filtered[0].ticker, 'new-ticker', `Gap ${STATE.filtered[0].gapPct.toFixed(1)}% · RVOL ${STATE.filtered[0].rvol.toFixed(1)}×`);
+  }, 2000);
+  setTimeout(() => {
+    if (STATE.filtered[1]) pushAlert(STATE.filtered[1].ticker, 'pmh', `Breaking Pre-Market High — $${STATE.filtered[1].pmHigh.toFixed(2)}`);
+  }, 5000);
+}
+
+init();
+</script>
+</body>
+</html>
