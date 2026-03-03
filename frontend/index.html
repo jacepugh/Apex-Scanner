@@ -1131,60 +1131,106 @@ function refresh() {
     now.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
 }
 
-// ─── REAL API STUB (backend proxy) ────────────────────────────
+// ─── RAILWAY BACKEND URL ──────────────────────────────────────
+const BACKEND_URL = 'https://apex-scanner-production.up.railway.app';
+const WS_URL      = 'wss://apex-scanner-production.up.railway.app';
+
+// ─── REAL API — fetches from Railway backend ──────────────────
 async function fetchLiveData() {
   try {
-    // In production, this calls your Node.js backend which proxies to Polygon/Finnhub
-    const res = await fetch(`apex-scanner-production.up.railway.app/api/scanner?source=${STATE.apiSource}&key=${STATE.apiKey}&` + new URLSearchParams({
+    const res = await fetch(`${BACKEND_URL}/api/scanner?` + new URLSearchParams({
       priceMin: STATE.filters.priceMin,
       priceMax: STATE.filters.priceMax,
-      volMin: STATE.filters.volMin,
-      rvolMin: STATE.filters.rvolMin,
-      gapMin: STATE.filters.gapMin,
+      volMin:   STATE.filters.volMin,
+      rvolMin:  STATE.filters.rvolMin,
+      gapMin:   STATE.filters.gapMin,
       floatMax: STATE.filters.floatMax,
     }));
     if (res.ok) {
-      STATE.stocks = await res.json();
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        STATE.stocks = data;
+        STATE.apiSource = 'polygon';
+        applyFilters();
+      }
     }
   } catch(e) {
-    console.warn('API fetch failed, using demo data:', e.message);
+    console.warn('API fetch failed, keeping current data:', e.message);
   }
+}
+
+// ─── WEBSOCKET — real-time push from Railway ──────────────────
+function connectWebSocket() {
+  const ws = new WebSocket(WS_URL);
+
+  ws.onopen = () => {
+    console.log('WebSocket connected to Railway');
+    document.getElementById('conn-dot').className   = 'conn-dot connected';
+    document.getElementById('conn-label').textContent = 'LIVE';
+    document.getElementById('mode-label').textContent = 'LIVE DATA';
+    document.getElementById('mode-dot').className   = 'mode-dot live';
+  };
+
+  ws.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'scan_results' && Array.isArray(msg.data) && msg.data.length > 0) {
+        STATE.stocks = msg.data;
+        STATE.apiSource = 'polygon';
+        applyFilters();
+        // Update last refresh timestamp
+        const now = new Date();
+        document.getElementById('stat-refresh').textContent =
+          now.toLocaleTimeString('en-US', { timeZone:'America/New_York', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+      }
+      if (msg.type === 'alerts' && Array.isArray(msg.data)) {
+        msg.data.forEach(a => pushAlert(a.ticker, a.type, a.message));
+      }
+    } catch(err) {
+      console.warn('WS parse error:', err);
+    }
+  };
+
+  ws.onerror = () => {
+    console.warn('WebSocket error');
+    document.getElementById('conn-dot').className    = 'conn-dot disconnected';
+    document.getElementById('conn-label').textContent = 'ERROR';
+  };
+
+  ws.onclose = () => {
+    document.getElementById('conn-dot').className    = 'conn-dot disconnected';
+    document.getElementById('conn-label').textContent = 'RECONNECTING';
+    // Auto-reconnect after 5 seconds
+    setTimeout(connectWebSocket, 5000);
+  };
 }
 
 // ─── INIT ─────────────────────────────────────────────────────
 function init() {
+  // Show mock data instantly while real data loads
   STATE.stocks = generateMockData();
+  STATE.apiSource = 'polygon';
   applyFilters();
   updateClock();
   updateConnectionStatus();
 
   setInterval(updateClock, 1000);
-  STATE.refreshTimer = setInterval(refresh, STATE.refreshInterval);
 
-  // Demo: fire a couple startup alerts after delay
-  setTimeout(() => {
-    if (STATE.filtered[0]) pushAlert(STATE.filtered[0].ticker, 'new-ticker', `Gap ${STATE.filtered[0].gapPct.toFixed(1)}% · RVOL ${STATE.filtered[0].rvol.toFixed(1)}×`);
-  }, 2000);
-  setTimeout(() => {
-    if (STATE.filtered[1]) pushAlert(STATE.filtered[1].ticker, 'pmh', `Breaking Pre-Market High — $${STATE.filtered[1].pmHigh.toFixed(2)}`);
-  }, 5000);
+  // Fetch real data immediately on load
+  fetchLiveData();
+
+  // Also keep polling every 15s as a fallback in case WS drops
+  STATE.refreshTimer = setInterval(() => {
+    fetchLiveData();
+    const now = new Date();
+    document.getElementById('stat-refresh').textContent =
+      now.toLocaleTimeString('en-US', { timeZone:'America/New_York', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+  }, STATE.refreshInterval);
+
+  // Connect WebSocket for real-time push
+  connectWebSocket();
 }
-// WebSocket connection to Railway
-const WS_URL = 'apex-scanner-production.up.railway.app';
-const ws = new WebSocket(WS_URL);
-ws.onopen = () => console.log('Connected to scanner server');
-ws.onmessage = (e) => {
-  const msg = JSON.parse(e.data);
-  if (msg.type === 'scan_results') {
-    STATE.stocks = msg.data;
-    applyFilters();
-  }
-  if (msg.type === 'alerts') {
-    msg.data.forEach(a => pushAlert(a.ticker, a.type, a.message));
-  }
-};
-ws.onerror = (e) => console.warn('WS error:', e);
-ws.onclose = () => setTimeout(() => location.reload(), 5000);
+
 init();
 </script>
 </body>
