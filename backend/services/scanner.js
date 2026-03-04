@@ -63,52 +63,66 @@ class ScannerService {
     return result;
   }
 
-  async fetchPolygonGainers() {
-    const cached = this.cache.get('poly_gainers');
-    if (cached) { console.log('[Polygon] Cache hit:', cached.length); return cached; }
-    console.log('[Polygon] Fetching gainers...');
-    let res;
-    try {
-      res = await axios.get(
-        'https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/gainers',
-        { params: { apiKey: this.apiKey, include_otc: false }, timeout: 15000 }
-      );
-    } catch (err) {
-      if (err.response) {
-        console.error('[Polygon] HTTP', err.response.status, JSON.stringify(err.response.data));
-        throw new Error('Polygon ' + err.response.status);
+ async fetchPolygonGainers() {
+  const cached = this.cache.get('poly_scan');
+  if (cached) { console.log('[Polygon] Cache hit:', cached.length); return cached; }
+
+  console.log('[Polygon] Fetching full market snapshot...');
+  let res;
+  try {
+    res = await axios.get(
+      'https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers',
+      {
+        params: {
+          apiKey: this.apiKey,
+          include_otc: false,
+        },
+        timeout: 30000,
       }
-      throw err;
+    );
+  } catch (err) {
+    if (err.response) {
+      console.error('[Polygon] HTTP', err.response.status, JSON.stringify(err.response.data));
+      throw new Error('Polygon ' + err.response.status);
     }
-
-    const tickers = res.data?.tickers || [];
-    console.log('[Polygon] Tickers returned:', tickers.length);
-
-    const stocks = tickers.map(t => {
-      const day = t.day || {}, prev = t.prevDay || {};
-      const price     = t.lastTrade?.p || day.c || day.o || 0;
-      const prevClose = prev.c || 0;
-      const gapPct    = prevClose > 0 ? ((day.o || price) - prevClose) / prevClose * 100 : 0;
-      const volume    = day.v || 0;
-      const prevVol   = prev.v || 1;
-      return {
-        ticker: t.ticker, name: t.ticker,
-        price:     parseFloat((price || 0).toFixed(2)),
-        prevClose: parseFloat((prevClose || 0).toFixed(2)),
-        gapPct:    parseFloat(gapPct.toFixed(2)),
-        change:    parseFloat((t.todaysChangePerc || 0).toFixed(2)),
-        volume:    Math.floor(volume),
-        rvol:      parseFloat((prevVol > 0 ? volume / prevVol : 1).toFixed(2)),
-        pmHigh:    parseFloat((day.h || price).toFixed(2)),
-        pmLow:     parseFloat((day.l || price).toFixed(2)),
-        float: null, mktCap: null, sector: '', news: [], catalyst: null,
-      };
-    }).filter(s => s.price > 0);
-
-    console.log('[Polygon] Mapped:', stocks.length);
-    this.cache.set('poly_gainers', stocks, 20);
-    return stocks;
+    throw err;
   }
+
+  const tickers = res.data?.tickers || [];
+  console.log('[Polygon] Full snapshot tickers:', tickers.length);
+
+  const stocks = tickers.map(t => {
+    const day  = t.day     || {};
+    const prev = t.prevDay || {};
+    const price     = t.lastTrade?.p || day.c || day.o || 0;
+    const open      = day.o || price;
+    const prevClose = prev.c || 0;
+    const gapPct    = prevClose > 0 ? ((open - prevClose) / prevClose) * 100 : 0;
+    const volume    = day.v || 0;
+    const prevVol   = prev.v || 1;
+    return {
+      ticker:    t.ticker,
+      name:      t.ticker,
+      price:     parseFloat((price || 0).toFixed(2)),
+      prevClose: parseFloat((prevClose || 0).toFixed(2)),
+      gapPct:    parseFloat(gapPct.toFixed(2)),
+      change:    parseFloat((t.todaysChangePerc || 0).toFixed(2)),
+      volume:    Math.floor(volume),
+      rvol:      parseFloat((prevVol > 0 ? volume / prevVol : 1).toFixed(2)),
+      pmHigh:    parseFloat((day.h || price).toFixed(2)),
+      pmLow:     parseFloat((day.l || price).toFixed(2)),
+      float:     null,
+      mktCap:    null,
+      sector:    '',
+      news:      [],
+      catalyst:  null,
+    };
+  }).filter(s => s.price > 0 && s.gapPct > 0);
+
+  console.log('[Polygon] After basic filter:', stocks.length);
+  this.cache.set('poly_scan', stocks, 20);
+  return stocks;
+}
 
   async fetchFinnhubGainers() {
     const cached = this.cache.get('fh_gainers');
