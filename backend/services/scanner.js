@@ -1,8 +1,9 @@
 /**
- * ScannerService — Fixed with better error logging
- * Demo data now uses DEMO1/DEMO2 tickers so you always
- * know when real vs demo data is showing
+ * ScannerService — Full Market Scan via Polygon Starter
+ * Uses /v2/snapshot/locale/us/markets/stocks/tickers
+ * for complete 8,400+ ticker scanning
  */
+
 const axios = require('axios');
 
 class ScannerService {
@@ -16,114 +17,194 @@ class ScannerService {
 
   async scan(filters = {}) {
     const f = {
-      priceMin: parseFloat(process.env.PRICE_MIN || '0.50'),
-      priceMax: parseFloat(process.env.PRICE_MAX || '25.00'),
-      volMin:   parseInt(process.env.VOL_MIN      || '500000'),
-      rvolMin:  parseFloat(process.env.RVOL_MIN   || '2.0'),
-      gapMin:   parseFloat(process.env.GAP_MIN    || '5.0'),
-      floatMax: parseInt(process.env.FLOAT_MAX    || '500000000'),
-      ...filters,
+      priceMin:  parseFloat(filters.priceMin  ?? process.env.PRICE_MIN  ?? '0.50'),
+      priceMax:  parseFloat(filters.priceMax  ?? process.env.PRICE_MAX  ?? '25.00'),
+      volMin:    parseInt(  filters.volMin    ?? process.env.VOL_MIN    ?? '500000'),
+      rvolMin:   parseFloat(filters.rvolMin   ?? process.env.RVOL_MIN   ?? '2.0'),
+      gapMin:    parseFloat(filters.gapMin    ?? process.env.GAP_MIN    ?? '5.0'),
+      floatMax:  parseInt(  filters.floatMax  ?? process.env.FLOAT_MAX  ?? '500000000'),
+      catalyst:  filters.catalyst  === true || filters.catalyst  === 'true',
+      excludeEtf:filters.excludeEtf !== false && filters.excludeEtf !== 'false',
     };
 
-    console.log('[Scanner] Source:', this.source, '| Key set:', !!this.apiKey);
+    console.log('[Scanner] Source:', this.source, '| Key set:', !!this.apiKey, '| Filters:', JSON.stringify(f));
 
     let stocks = [], usedDemo = false;
 
     try {
       if (this.source === 'polygon' && this.apiKey) {
-        stocks = await this.fetchPolygonGainers();
+        stocks = await this.fetchPolygonFullScan(f);
       } else if (this.source === 'finnhub' && this.apiKey) {
         stocks = await this.fetchFinnhubGainers();
       } else {
-        console.warn('[Scanner] No API key/source. DATA_SOURCE=' + this.source + ' KEY=' + (this.apiKey ? 'SET' : 'MISSING'));
-        stocks = this.generateDemoData();
+        console.warn('[Scanner] No valid API source. DATA_SOURCE=' + this.source + ' KEY=' + (this.apiKey ? 'SET' : 'MISSING'));
+        stocks   = this.generateDemoData();
         usedDemo = true;
       }
     } catch (err) {
-      console.error('[Scanner] Fetch failed:', err.message);
-      stocks = this.generateDemoData();
+      console.error('[Scanner] Fetch error:', err.message);
+      stocks   = this.generateDemoData();
       usedDemo = true;
     }
 
-    console.log('[Scanner] Got', stocks.length, 'stocks | demo:', usedDemo);
+    console.log('[Scanner] Raw stocks:', stocks.length, '| demo:', usedDemo);
 
-    for (const stock of stocks) {
+    // Enrich with news (only top 30 to avoid rate limits)
+    const toEnrich = stocks.slice(0, 30);
+    for (const stock of toEnrich) {
       try {
         stock.news     = await this.news.getNewsForTicker(stock.ticker);
         stock.catalyst = this.classifyCatalyst(stock.news);
       } catch (e) {
-        stock.news = []; stock.catalyst = null;
+        stock.news     = [];
+        stock.catalyst = null;
       }
     }
 
-    const filtered = usedDemo ? stocks : this.applyFilters(stocks, f);
-    console.log('[Scanner] After filters:', filtered.length);
-    const result = this.detectAlerts(filtered);
-    this.cache.set('last_scan', result, 60);
-    return result;
+    const filtered = usedDemo ? stocks : stocks;
+    console.log('[Scanner] Returning:', filtered.length, 'stocks');
+
+    const withAlerts = this.detectAlerts(filtered);
+    this.cache.set('last_scan', withAlerts, 60);
+    return withAlerts;
   }
 
- async fetchPolygonGainers() {
-  const cached = this.cache.get('poly_scan');
-  if (cached) { console.log('[Polygon] Cache hit:', cached.length); return cached; }
+  // ─── FULL MARKET SCAN ─────────────────────────────────
+  async fetchPolygonFullScan(f) {
+    const cacheKey = 'poly_full_' + JSON.stringify(f);
+    const cached   = this.cache.get('poly_full');
+    if (cached) { console.log('[Polygon] Cache hit:', cached.length); return cached; }
 
-  console.log('[Polygon] Fetching full market snapshot...');
-  let res;
-  try {
-    res = await axios.get(
-      'https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers',
-      {
-        params: {
-          apiKey: this.apiKey,
-          include_otc: false,
-        },
-        timeout: 30000,
+    console.log('[Polygon] Fetching full market snapshot...');
+
+    let res;
+    try {
+      res = await axios.get(
+        'https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers',
+        {
+          params:  { apiKey: this.apiKey, include_otc: false },
+          timeout: 30000,
+        }
+      );
+    } catch (err) {
+      if (err.response) {
+        console.error('[Polygon] HTTP', err.response.status, JSON.stringify(err.response.data));
+        // If full scan fails, fall back to gainers endpoint
+        console.log('[Polygon] Falling back to gainers endpoint...');
+        return await this.fetchPolygonGainers();
       }
-    );
-  } catch (err) {
-    if (err.response) {
-      console.error('[Polygon] HTTP', err.response.status, JSON.stringify(err.response.data));
-      throw new Error('Polygon ' + err.response.status);
+      throw err;
     }
-    throw err;
+
+    const tickers = res.data?.tickers || [];
+    console.log('[Polygon] Full snapshot returned:', tickers.length, 'tickers');
+
+    if (!tickers.length) {
+      console.warn('[Polygon] Empty snapshot — market may be closed. Trying gainers...');
+      return await this.fetchPolygonGainers();
+    }
+
+    // Map and apply filters in one pass for performance
+    const stocks = [];
+    for (const t of tickers) {
+      const day  = t.day     || {};
+      const prev = t.prevDay || {};
+      const price     = t.lastTrade?.p || day.c || day.o || 0;
+      const open      = day.o || price;
+      const prevClose = prev.c || 0;
+      const gapPct    = prevClose > 0 ? ((open - prevClose) / prevClose) * 100 : 0;
+      const volume    = day.v || 0;
+      const prevVol   = prev.v || 1;
+      const rvol      = prevVol > 0 ? volume / prevVol : 0;
+
+      // Apply filters here for performance — avoids building huge array
+      if (!price || price < f.priceMin || price > f.priceMax) continue;
+      if (volume > 0 && volume < f.volMin) continue;
+      if (rvol > 0 && rvol < f.rvolMin) continue;
+      if (gapPct < f.gapMin) continue;
+      if (f.excludeEtf && this.isEtfOrWarrant(t.ticker)) continue;
+
+      stocks.push({
+        ticker:    t.ticker,
+        name:      t.ticker,
+        price:     parseFloat(price.toFixed(2)),
+        prevClose: parseFloat(prevClose.toFixed(2)),
+        gapPct:    parseFloat(gapPct.toFixed(2)),
+        change:    parseFloat((t.todaysChangePerc || 0).toFixed(2)),
+        volume:    Math.floor(volume),
+        rvol:      parseFloat(rvol.toFixed(2)),
+        pmHigh:    parseFloat((day.h || price).toFixed(2)),
+        pmLow:     parseFloat((day.l || price).toFixed(2)),
+        float:     null,
+        mktCap:    null,
+        sector:    '',
+        news:      [],
+        catalyst:  null,
+      });
+    }
+
+    // Sort by gap descending
+    stocks.sort((a, b) => b.gapPct - a.gapPct);
+
+    // Cap at top 50 results
+    const top = stocks.slice(0, 50);
+    console.log('[Polygon] After filters:', stocks.length, '| Returning top:', top.length);
+
+    this.cache.set('poly_full', top, 20);
+    return top;
   }
 
-  const tickers = res.data?.tickers || [];
-  console.log('[Polygon] Full snapshot tickers:', tickers.length);
+  // ─── GAINERS FALLBACK ─────────────────────────────────
+  async fetchPolygonGainers() {
+    const cached = this.cache.get('poly_gainers');
+    if (cached) { console.log('[Polygon] Gainers cache hit:', cached.length); return cached; }
 
-  const stocks = tickers.map(t => {
-    const day  = t.day     || {};
-    const prev = t.prevDay || {};
-    const price     = t.lastTrade?.p || day.c || day.o || 0;
-    const open      = day.o || price;
-    const prevClose = prev.c || 0;
-    const gapPct    = prevClose > 0 ? ((open - prevClose) / prevClose) * 100 : 0;
-    const volume    = day.v || 0;
-    const prevVol   = prev.v || 1;
-    return {
-      ticker:    t.ticker,
-      name:      t.ticker,
-      price:     parseFloat((price || 0).toFixed(2)),
-      prevClose: parseFloat((prevClose || 0).toFixed(2)),
-      gapPct:    parseFloat(gapPct.toFixed(2)),
-      change:    parseFloat((t.todaysChangePerc || 0).toFixed(2)),
-      volume:    Math.floor(volume),
-      rvol:      parseFloat((prevVol > 0 ? volume / prevVol : 1).toFixed(2)),
-      pmHigh:    parseFloat((day.h || price).toFixed(2)),
-      pmLow:     parseFloat((day.l || price).toFixed(2)),
-      float:     null,
-      mktCap:    null,
-      sector:    '',
-      news:      [],
-      catalyst:  null,
-    };
-  }).filter(s => s.price > 0 && s.gapPct > 0);
+    console.log('[Polygon] Fetching gainers (fallback)...');
+    let res;
+    try {
+      res = await axios.get(
+        'https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/gainers',
+        { params: { apiKey: this.apiKey, include_otc: false }, timeout: 15000 }
+      );
+    } catch (err) {
+      if (err.response) {
+        console.error('[Polygon] Gainers HTTP', err.response.status, JSON.stringify(err.response.data));
+        throw new Error('Polygon gainers ' + err.response.status);
+      }
+      throw err;
+    }
 
-  console.log('[Polygon] After basic filter:', stocks.length);
-  this.cache.set('poly_scan', stocks, 20);
-  return stocks;
-}
+    const tickers = res.data?.tickers || [];
+    console.log('[Polygon] Gainers returned:', tickers.length);
 
+    const stocks = tickers.map(t => {
+      const day  = t.day     || {};
+      const prev = t.prevDay || {};
+      const price     = t.lastTrade?.p || day.c || day.o || 0;
+      const prevClose = prev.c || 0;
+      const gapPct    = prevClose > 0 ? ((day.o || price) - prevClose) / prevClose * 100 : 0;
+      const volume    = day.v || 0;
+      const prevVol   = prev.v || 1;
+      return {
+        ticker:    t.ticker,
+        name:      t.ticker,
+        price:     parseFloat((price || 0).toFixed(2)),
+        prevClose: parseFloat((prevClose || 0).toFixed(2)),
+        gapPct:    parseFloat(gapPct.toFixed(2)),
+        change:    parseFloat((t.todaysChangePerc || 0).toFixed(2)),
+        volume:    Math.floor(volume),
+        rvol:      parseFloat((prevVol > 0 ? volume / prevVol : 1).toFixed(2)),
+        pmHigh:    parseFloat((day.h || price).toFixed(2)),
+        pmLow:     parseFloat((day.l || price).toFixed(2)),
+        float:     null, mktCap: null, sector: '', news: [], catalyst: null,
+      };
+    }).filter(s => s.price > 0);
+
+    this.cache.set('poly_gainers', stocks, 20);
+    return stocks;
+  }
+
+  // ─── FINNHUB ──────────────────────────────────────────
   async fetchFinnhubGainers() {
     const cached = this.cache.get('fh_gainers');
     if (cached) return cached;
@@ -137,31 +218,32 @@ class ScannerService {
   async fetchFinnhubQuote(ticker) {
     const cached = this.cache.get('fhq_' + ticker);
     if (cached) return cached;
-    const res = await axios.get('https://finnhub.io/api/v1/quote', { params: { symbol: ticker, token: this.apiKey }, timeout: 5000 });
+    const res = await axios.get('https://finnhub.io/api/v1/quote', {
+      params: { symbol: ticker, token: this.apiKey }, timeout: 5000,
+    });
     const q = res.data;
     if (!q?.c || q.c === 0) return null;
     const gapPct = q.pc > 0 ? ((q.o - q.pc) / q.pc) * 100 : 0;
-    const result = { ticker, name: ticker, price: q.c, prevClose: q.pc, gapPct: parseFloat(gapPct.toFixed(2)), change: q.pc > 0 ? parseFloat(((q.c - q.pc) / q.pc * 100).toFixed(2)) : 0, volume: q.v || 0, rvol: 0, pmHigh: q.h, pmLow: q.l, float: null, mktCap: null, news: [], catalyst: null };
+    const result = {
+      ticker, name: ticker, price: q.c, prevClose: q.pc,
+      gapPct: parseFloat(gapPct.toFixed(2)),
+      change: q.pc > 0 ? parseFloat(((q.c - q.pc) / q.pc * 100).toFixed(2)) : 0,
+      volume: q.v || 0, rvol: 0, pmHigh: q.h, pmLow: q.l,
+      float: null, mktCap: null, news: [], catalyst: null,
+    };
     this.cache.set('fhq_' + ticker, result, 15);
     return result;
   }
 
-  applyFilters(stocks, f) {
-    return stocks.filter(s => {
-      if (!s.price || s.price < f.priceMin || s.price > f.priceMax) return false;
-      if (s.volume > 0 && s.volume < f.volMin) return false;
-      if (s.rvol > 0 && s.rvol < f.rvolMin) return false;
-      if (s.gapPct < f.gapMin) return false;
-      if (s.float && s.float > f.floatMax) return false;
-      if (this.isEtfOrWarrant(s.ticker)) return false;
-      return true;
-    });
-  }
-
+  // ─── HELPERS ──────────────────────────────────────────
   isEtfOrWarrant(ticker) {
     if (!ticker) return true;
+    if (ticker.length > 5) return true;
     if (/[Ww][Ss]?$/.test(ticker)) return true;
-    return ['SPY','QQQ','IWM','GLD','SLV','TLT','HYG','XLE','XLF','XLK','ARKK','ARKG','SQQQ','TQQQ'].includes(ticker.toUpperCase());
+    const etfs = ['SPY','QQQ','IWM','GLD','SLV','TLT','HYG','XLE','XLF','XLK',
+                  'ARKK','ARKG','ARKW','SQQQ','TQQQ','SPXL','SPXU','UVXY','VXX',
+                  'VIXY','LABD','LABU','SOXL','SOXS','FNGU','FNGD','CURE','NAIL'];
+    return etfs.includes(ticker.toUpperCase());
   }
 
   detectAlerts(stocks) {
@@ -177,16 +259,18 @@ class ScannerService {
 
   classifyCatalyst(newsItems = []) {
     if (!newsItems || !newsItems.length) return null;
-    const text = newsItems.map(n => ((n.headline || '') + ' ' + (n.summary || '')).toLowerCase()).join(' ');
+    const text = newsItems.map(n =>
+      ((n.headline || '') + ' ' + (n.summary || '')).toLowerCase()
+    ).join(' ');
     if (/fda|approval|clearance|510\(k\)|breakthrough|pdufa|nda|bla/.test(text))
       return { type:'fda',      label:'FDA Approval',  class:'cat-fda',      score:9 };
     if (/earnings|revenue|eps|profit|quarterly|beat/.test(text))
       return { type:'earnings', label:'Earnings Beat', class:'cat-earnings', score:8 };
     if (/merger|acquisition|acquires|acquired|buyout|takeover/.test(text))
       return { type:'ma',       label:'M&A Deal',      class:'cat-ma',       score:8 };
-    if (/contract|award|wins|selected|government/.test(text))
+    if (/contract|award|wins|selected|government|department of/.test(text))
       return { type:'contract', label:'Contract Win',  class:'cat-contract', score:7 };
-    if (/partnership|collaboration|agreement/.test(text))
+    if (/partnership|collaboration|agreement|joint venture/.test(text))
       return { type:'partner',  label:'Partnership',   class:'cat-partner',  score:6 };
     if (/8-k|s-1|sec filing/.test(text))
       return { type:'sec',      label:'SEC Filing',    class:'cat-sec',      score:5 };
@@ -196,13 +280,27 @@ class ScannerService {
   generateDemoData() {
     console.log('[Scanner] WARNING: DEMO MODE — check DATA_SOURCE and POLYGON_API_KEY in Railway');
     let seed = 77777;
-    const r = (min, max) => { seed = (seed * 1664525 + 1013904223) & 0xffffffff; return min + ((seed >>> 0) / 0xffffffff) * (max - min); };
+    const r = (min, max) => {
+      seed = (seed * 1664525 + 1013904223) & 0xffffffff;
+      return min + ((seed >>> 0) / 0xffffffff) * (max - min);
+    };
     return [
-      { ticker:'DEMO1', float:4e6 }, { ticker:'DEMO2', float:8e6 },
-      { ticker:'DEMO3', float:12e6 }, { ticker:'DEMO4', float:6e6 }, { ticker:'DEMO5', float:20e6 },
+      { ticker:'DEMO1', float:4e6  },
+      { ticker:'DEMO2', float:8e6  },
+      { ticker:'DEMO3', float:12e6 },
+      { ticker:'DEMO4', float:6e6  },
+      { ticker:'DEMO5', float:20e6 },
     ].map(s => {
       const prev = r(1, 20), gap = r(5, 40), price = prev * (1 + gap / 100);
-      return { ticker:s.ticker, name:s.ticker+' (Demo)', price:parseFloat(price.toFixed(2)), prevClose:parseFloat(prev.toFixed(2)), gapPct:parseFloat(gap.toFixed(2)), change:parseFloat(gap.toFixed(2)), volume:Math.floor(r(1e6,10e6)), rvol:parseFloat(r(3,15).toFixed(1)), pmHigh:parseFloat((price*r(1.01,1.1)).toFixed(2)), pmLow:parseFloat((prev*1.02).toFixed(2)), float:s.float, mktCap:null, news:[], catalyst:null };
+      return {
+        ticker: s.ticker, name: s.ticker + ' (Demo)',
+        price: parseFloat(price.toFixed(2)), prevClose: parseFloat(prev.toFixed(2)),
+        gapPct: parseFloat(gap.toFixed(2)), change: parseFloat(gap.toFixed(2)),
+        volume: Math.floor(r(1e6, 10e6)), rvol: parseFloat(r(3, 15).toFixed(1)),
+        pmHigh: parseFloat((price * r(1.01, 1.1)).toFixed(2)),
+        pmLow:  parseFloat((prev * 1.02).toFixed(2)),
+        float: s.float, mktCap: null, news: [], catalyst: null,
+      };
     });
   }
 
