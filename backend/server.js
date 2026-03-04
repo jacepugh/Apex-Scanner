@@ -19,6 +19,7 @@ const cron       = require('node-cron');
 const scannerRoutes = require('./routes/scanner');
 const newsRoutes    = require('./routes/news');
 const alertRoutes   = require('./routes/alerts');
+process.env.DATA_SOURCE = 'polygon';
 const { ScannerService } = require('./services/scanner');
 const { NewsService }    = require('./services/news');
 const { CacheService }   = require('./services/cache');
