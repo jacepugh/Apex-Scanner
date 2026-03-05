@@ -698,7 +698,7 @@ function renderCards(){
         <div class="action-row">
           <div class="act-btn sizer-link" onclick="event.stopPropagation();openSizerWithPrice(${s.price})">🧮 Size It</div>
           <a class="act-btn" href="https://finance.yahoo.com/quote/${s.ticker}" target="_blank">📈 Yahoo</a>
-          <a class="act-btn" href="robinhood://stocks/${s.ticker}">📊 Robinhood</a>
+          <a class="act-btn" href="https://robinhood.com/stocks/${s.ticker}" target="_blank">📊 Robinhood</a>
         </div>
       </div>`;
     return`<div class="stock-card ${isPmh?'pmh-active':''}" id="card-${s.ticker}" onclick="toggleCard('${s.ticker}')" style="animation-delay:${i*0.04}s">
