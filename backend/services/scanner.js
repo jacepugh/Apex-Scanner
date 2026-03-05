@@ -1,7 +1,7 @@
 /**
- * ScannerService — Full Market Scan via Polygon Starter
- * Uses /v2/snapshot/locale/us/markets/stocks/tickers
- * for complete 8,400+ ticker scanning
+ * ScannerService — Fixed Filter Logic
+ * Key fix: skip filter checks when data is missing/zero
+ * rather than rejecting stocks with incomplete data
  */
 
 const axios = require('axios');
@@ -23,7 +23,7 @@ class ScannerService {
       rvolMin:   parseFloat(filters.rvolMin   ?? process.env.RVOL_MIN   ?? '2.0'),
       gapMin:    parseFloat(filters.gapMin    ?? process.env.GAP_MIN    ?? '5.0'),
       floatMax:  parseInt(  filters.floatMax  ?? process.env.FLOAT_MAX  ?? '500000000'),
-      catalyst:  filters.catalyst  === true || filters.catalyst  === 'true',
+      catalyst:  filters.catalyst   === true || filters.catalyst   === 'true',
       excludeEtf:filters.excludeEtf !== false && filters.excludeEtf !== 'false',
     };
 
@@ -37,7 +37,7 @@ class ScannerService {
       } else if (this.source === 'finnhub' && this.apiKey) {
         stocks = await this.fetchFinnhubGainers();
       } else {
-        console.warn('[Scanner] No valid API source. DATA_SOURCE=' + this.source + ' KEY=' + (this.apiKey ? 'SET' : 'MISSING'));
+        console.warn('[Scanner] No valid source. DATA_SOURCE=' + this.source);
         stocks   = this.generateDemoData();
         usedDemo = true;
       }
@@ -49,7 +49,7 @@ class ScannerService {
 
     console.log('[Scanner] Raw stocks:', stocks.length, '| demo:', usedDemo);
 
-    // Enrich with news (only top 30 to avoid rate limits)
+    // Enrich top 30 with news
     const toEnrich = stocks.slice(0, 30);
     for (const stock of toEnrich) {
       try {
@@ -61,18 +61,14 @@ class ScannerService {
       }
     }
 
-    const filtered = usedDemo ? stocks : stocks;
-    console.log('[Scanner] Returning:', filtered.length, 'stocks');
-
-    const withAlerts = this.detectAlerts(filtered);
+    const withAlerts = this.detectAlerts(stocks);
     this.cache.set('last_scan', withAlerts, 60);
     return withAlerts;
   }
 
   // ─── FULL MARKET SCAN ─────────────────────────────────
   async fetchPolygonFullScan(f) {
-    const cacheKey = 'poly_full_' + JSON.stringify(f);
-    const cached   = this.cache.get('poly_full');
+    const cached = this.cache.get('poly_full');
     if (cached) { console.log('[Polygon] Cache hit:', cached.length); return cached; }
 
     console.log('[Polygon] Fetching full market snapshot...');
@@ -81,16 +77,12 @@ class ScannerService {
     try {
       res = await axios.get(
         'https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers',
-        {
-          params:  { apiKey: this.apiKey, include_otc: false },
-          timeout: 30000,
-        }
+        { params: { apiKey: this.apiKey, include_otc: false }, timeout: 30000 }
       );
     } catch (err) {
       if (err.response) {
         console.error('[Polygon] HTTP', err.response.status, JSON.stringify(err.response.data));
-        // If full scan fails, fall back to gainers endpoint
-        console.log('[Polygon] Falling back to gainers endpoint...');
+        console.log('[Polygon] Falling back to gainers...');
         return await this.fetchPolygonGainers();
       }
       throw err;
@@ -100,29 +92,48 @@ class ScannerService {
     console.log('[Polygon] Full snapshot returned:', tickers.length, 'tickers');
 
     if (!tickers.length) {
-      console.warn('[Polygon] Empty snapshot — market may be closed. Trying gainers...');
+      console.warn('[Polygon] Empty — trying gainers fallback...');
       return await this.fetchPolygonGainers();
     }
 
-    // Map and apply filters in one pass for performance
     const stocks = [];
+
     for (const t of tickers) {
       const day  = t.day     || {};
       const prev = t.prevDay || {};
-      const price     = t.lastTrade?.p || day.c || day.o || 0;
+
+      // Price — skip if no price at all
+      const price = t.lastTrade?.p || day.c || day.o || 0;
+      if (!price || price <= 0) continue;
+
+      // Price range filter
+      if (price < f.priceMin || price > f.priceMax) continue;
+
+      // ETF/warrant filter
+      if (f.excludeEtf && this.isEtfOrWarrant(t.ticker)) continue;
+
       const open      = day.o || price;
       const prevClose = prev.c || 0;
-      const gapPct    = prevClose > 0 ? ((open - prevClose) / prevClose) * 100 : 0;
       const volume    = day.v || 0;
-      const prevVol   = prev.v || 1;
-      const rvol      = prevVol > 0 ? volume / prevVol : 0;
+      const prevVol   = prev.v || 0;
 
-      // Apply filters here for performance — avoids building huge array
-      if (!price || price < f.priceMin || price > f.priceMax) continue;
+      // Gap calculation — only filter if we have valid prevClose
+      let gapPct = 0;
+      if (prevClose > 0) {
+        gapPct = ((open - prevClose) / prevClose) * 100;
+      }
+      // Only apply gap filter if prevClose data exists
+      if (prevClose > 0 && gapPct < f.gapMin) continue;
+
+      // Volume filter — only apply if volume data exists
       if (volume > 0 && volume < f.volMin) continue;
-      if (rvol > 0 && rvol < f.rvolMin) continue;
-      if (gapPct < f.gapMin) continue;
-      if (f.excludeEtf && this.isEtfOrWarrant(t.ticker)) continue;
+
+      // RVOL calculation — only filter if both current and prev volume exist
+      let rvol = 0;
+      if (prevVol > 0 && volume > 0) {
+        rvol = volume / prevVol;
+        if (rvol < f.rvolMin) continue;
+      }
 
       stocks.push({
         ticker:    t.ticker,
@@ -143,10 +154,13 @@ class ScannerService {
       });
     }
 
-    // Sort by gap descending
-    stocks.sort((a, b) => b.gapPct - a.gapPct);
+    // Sort by gap % descending, then by change % for stocks without gap data
+    stocks.sort((a, b) => {
+      if (b.gapPct !== a.gapPct) return b.gapPct - a.gapPct;
+      return b.change - a.change;
+    });
 
-    // Cap at top 50 results
+    // Return top 50
     const top = stocks.slice(0, 50);
     console.log('[Polygon] After filters:', stocks.length, '| Returning top:', top.length);
 
@@ -159,7 +173,7 @@ class ScannerService {
     const cached = this.cache.get('poly_gainers');
     if (cached) { console.log('[Polygon] Gainers cache hit:', cached.length); return cached; }
 
-    console.log('[Polygon] Fetching gainers (fallback)...');
+    console.log('[Polygon] Fetching gainers...');
     let res;
     try {
       res = await axios.get(
@@ -184,7 +198,8 @@ class ScannerService {
       const prevClose = prev.c || 0;
       const gapPct    = prevClose > 0 ? ((day.o || price) - prevClose) / prevClose * 100 : 0;
       const volume    = day.v || 0;
-      const prevVol   = prev.v || 1;
+      const prevVol   = prev.v || 0;
+      const rvol      = prevVol > 0 ? volume / prevVol : 0;
       return {
         ticker:    t.ticker,
         name:      t.ticker,
@@ -193,7 +208,7 @@ class ScannerService {
         gapPct:    parseFloat(gapPct.toFixed(2)),
         change:    parseFloat((t.todaysChangePerc || 0).toFixed(2)),
         volume:    Math.floor(volume),
-        rvol:      parseFloat((prevVol > 0 ? volume / prevVol : 1).toFixed(2)),
+        rvol:      parseFloat(rvol.toFixed(2)),
         pmHigh:    parseFloat((day.h || price).toFixed(2)),
         pmLow:     parseFloat((day.l || price).toFixed(2)),
         float:     null, mktCap: null, sector: '', news: [], catalyst: null,
@@ -210,7 +225,7 @@ class ScannerService {
     if (cached) return cached;
     const list = ['AAPL','TSLA','AMD','NVDA','AMZN','META','MSFT','GOOGL','NFLX','BABA','NIO','PLTR','SOFI','MARA','RIOT','COIN'];
     const results = await Promise.allSettled(list.map(s => this.fetchFinnhubQuote(s)));
-    const stocks = results.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
+    const stocks  = results.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
     this.cache.set('fh_gainers', stocks, 30);
     return stocks;
   }
@@ -239,7 +254,7 @@ class ScannerService {
   isEtfOrWarrant(ticker) {
     if (!ticker) return true;
     if (ticker.length > 5) return true;
-    if (/[Ww][Ss]?$/.test(ticker)) return true;
+    if (/W[Ss]?$/.test(ticker)) return true;
     const etfs = ['SPY','QQQ','IWM','GLD','SLV','TLT','HYG','XLE','XLF','XLK',
                   'ARKK','ARKG','ARKW','SQQQ','TQQQ','SPXL','SPXU','UVXY','VXX',
                   'VIXY','LABD','LABU','SOXL','SOXS','FNGU','FNGD','CURE','NAIL'];
@@ -272,13 +287,13 @@ class ScannerService {
       return { type:'contract', label:'Contract Win',  class:'cat-contract', score:7 };
     if (/partnership|collaboration|agreement|joint venture/.test(text))
       return { type:'partner',  label:'Partnership',   class:'cat-partner',  score:6 };
-    if (/8-k|s-1|sec filing/.test(text))
+    if (/8-k|s-1|sec filing|offering|raise/.test(text))
       return { type:'sec',      label:'SEC Filing',    class:'cat-sec',      score:5 };
     return null;
   }
 
   generateDemoData() {
-    console.log('[Scanner] WARNING: DEMO MODE — check DATA_SOURCE and POLYGON_API_KEY in Railway');
+    console.log('[Scanner] WARNING: DEMO MODE');
     let seed = 77777;
     const r = (min, max) => {
       seed = (seed * 1664525 + 1013904223) & 0xffffffff;
