@@ -1,8 +1,8 @@
 /**
- * NewsService — Fixed Version
+ * NewsService — v2
+ * - 72-hour news filter (hard cutoff)
  * - Shows ALL relevant news, not just exact catalyst matches
- * - Uses correct API keys per source
- * - Falls back to Google News search link if no articles found
+ * - Polygon→Finnhub→AlphaVantage fallback chain
  */
 
 const axios = require('axios');
@@ -33,6 +33,9 @@ const CATALYST_PATTERNS = [
   { pattern: /uplist|nasdaq|nyse listing/i,                type:'sec',      label:'Exchange Listing', score:6,  class:'cat-sec' },
 ];
 
+// Hard cutoff: only articles published within this many hours
+const NEWS_MAX_AGE_HOURS = 72;
+
 class NewsService {
   constructor({ cache, apiKey }) {
     this.cache          = cache;
@@ -44,45 +47,47 @@ class NewsService {
   }
 
   // ─── MAIN ENTRY POINT ─────────────────────────────────
-  async getNewsForTicker(ticker, daysBack = 7) {
-    const cacheKey = 'news_' + ticker;
+  async getNewsForTicker(ticker, daysBack = 3) {
+    const cacheKey = 'news_v2_' + ticker;
     const cached   = this.cache.get(cacheKey);
     if (cached) return cached;
 
     let articles = [];
 
     try {
-      // Always try Polygon news first if we have the key
       if (this.polygonKey) {
         articles = await this.fetchPolygonNews(ticker, daysBack);
       }
-
-      // If Polygon returned nothing, try Finnhub
       if (!articles.length && this.finnhubKey) {
         articles = await this.fetchFinnhubNews(ticker, daysBack);
       }
-
-      // If still nothing and Alpha Vantage key exists, try that
       if (!articles.length && this.alphaVantageKey) {
         articles = await this.fetchAVNews(ticker);
       }
-
     } catch (err) {
       console.warn('[News] Failed for ' + ticker + ':', err.message);
       articles = [];
     }
 
-    // Remove obvious low quality filler
-    const quality = articles.filter(a => !this.isLowQuality(a));
+    // ── 72-HOUR HARD CUTOFF ──────────────────────────────
+    const cutoff = Date.now() - (NEWS_MAX_AGE_HOURS * 60 * 60 * 1000);
+    const fresh  = articles.filter(a => {
+      const pub = new Date(a.publishedAt).getTime();
+      return !isNaN(pub) && pub >= cutoff;
+    });
 
-    // Classify each article — but KEEP articles even if no catalyst matches
-    // We want to show the news regardless, catalyst chip is a bonus
+    console.log(`[News] ${ticker}: ${articles.length} raw → ${fresh.length} within 72h`);
+
+    // Remove low-quality filler
+    const quality = fresh.filter(a => !this.isLowQuality(a));
+
+    // Classify each article (keep even if no catalyst match)
     const classified = quality.map(a => ({
       ...a,
       catalyst: this.classifyArticle(a),
     }));
 
-    // Sort: catalyst articles first, then by date
+    // Sort: catalyst articles first, then by recency
     classified.sort((a, b) => {
       const scoreA = a.catalyst?.score || 0;
       const scoreB = b.catalyst?.score || 0;
@@ -90,11 +95,10 @@ class NewsService {
       return new Date(b.publishedAt) - new Date(a.publishedAt);
     });
 
-    // Keep top 5 articles max
     const final = classified.slice(0, 5);
 
-    // Cache 15 minutes
-    this.cache.set(cacheKey, final, 900);
+    // Cache 10 minutes (shorter than before since we care about freshness)
+    this.cache.set(cacheKey, final, 600);
     return final;
   }
 
@@ -211,7 +215,12 @@ class NewsService {
 
   timeAgo(isoString) {
     if (!isoString) return '';
-    const ms   = Date.now() - new Date(isoString).getTime();
+    // Handle Alpha Vantage format: 20240115T143000
+    let parsed = isoString;
+    if (/^\d{8}T\d{6}$/.test(isoString)) {
+      parsed = isoString.replace(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})$/, '$1-$2-$3T$4:$5:$6Z');
+    }
+    const ms   = Date.now() - new Date(parsed).getTime();
     const mins = Math.floor(ms / 60000);
     const hrs  = Math.floor(mins / 60);
     const days = Math.floor(hrs / 24);
