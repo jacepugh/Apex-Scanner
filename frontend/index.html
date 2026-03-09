@@ -60,42 +60,37 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .sstat-val{font-family:var(--mono);font-size:16px;font-weight:500;color:var(--text);line-height:1.1}
 .sstat-val.green{color:var(--green)}.sstat-val.accent{color:var(--accent)}
 
-/* ── MODE TABS ── */
-#modetabs{
-  position:fixed;top:calc(var(--safe-top) + 102px);left:0;right:0;z-index:98;
-  display:flex;background:var(--bg);border-bottom:1px solid var(--border);
-}
-.mtab{
-  flex:1;padding:10px 8px;font-family:var(--head);font-weight:600;font-size:12px;
-  letter-spacing:0.08em;text-transform:uppercase;color:var(--dim);background:none;
-  border:none;border-bottom:2px solid transparent;cursor:pointer;transition:all 0.15s;text-align:center;
-}
-.mtab.active{color:var(--accent);border-bottom-color:var(--accent)}
 
 /* ── PAGES ── */
-#page-scanner,#page-sizer{
+#page-scanner,#page-sizer,#page-watchlist{
   position:fixed;
-  top:calc(var(--safe-top) + 140px);
+  top:calc(var(--safe-top) + 102px);
   bottom:calc(var(--safe-bot) + 60px);
   left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+  display:none;
 }
-#page-sizer{display:none}
+#page-scanner{display:block}
 
 /* hide stats/mode tabs when on sizer */
-body.sizer-active #statsstrip,
-body.sizer-active #modetabs{display:none}
-body.sizer-active #page-scanner{display:none}
-body.sizer-active #page-sizer{display:block}
-body.sizer-active #page-sizer{top:calc(var(--safe-top) + 56px)}
+body.sizer-active #statsstrip{display:none}
+body.sizer-active #page-scanner,
+body.sizer-active #page-watchlist{display:none}
+body.sizer-active #page-sizer{display:block;top:calc(var(--safe-top) + 56px)}
+
+body.watchlist-active #page-scanner{display:none}
+body.watchlist-active #page-sizer{display:none}
+body.watchlist-active #page-watchlist{display:block}
 
 /* ── STOCK CARDS ── */
 .stock-card{
   margin:8px 12px;background:var(--bg1);border:1px solid var(--border);
   border-radius:12px;overflow:hidden;cursor:pointer;transition:border-color 0.15s;
-  animation:cardIn 0.3s ease both;
 }
+/* NEW: cards entering for first time animate in, updates don't */
+.stock-card.card-new{animation:cardIn 0.3s ease both}
 .stock-card:active{opacity:0.85}
 .stock-card.pmh-active{border-color:var(--gold)}
+.stock-card.pinned{border-color:rgba(255,204,0,0.4)}
 @keyframes cardIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .card-main{display:flex;align-items:center;padding:12px 14px;gap:10px}
 .card-ticker-col{flex-shrink:0;min-width:72px}
@@ -104,10 +99,19 @@ body.sizer-active #page-sizer{top:calc(var(--safe-top) + 56px)}
 .card-float-tag{font-family:var(--mono);font-size:9px;color:var(--mid);margin-top:2px}
 .card-float-tag.lf{color:var(--green)}.card-float-tag.uf{color:var(--gold)}
 .card-middle{flex:1;display:flex;flex-direction:column;gap:5px}
-.card-price-row{display:flex;align-items:baseline;gap:8px}
+.card-price-row{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .card-price{font-family:var(--mono);font-size:18px;font-weight:500;color:var(--text)}
 .card-chg{font-family:var(--mono);font-size:13px;font-weight:500}
 .card-chg.pos{color:var(--green)}.card-chg.neg{color:var(--red)}
+/* Size It inline badge next to price */
+.card-sizeit{
+  display:inline-flex;align-items:center;gap:3px;
+  font-family:var(--mono);font-size:9px;color:var(--accent);
+  background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.18);
+  border-radius:4px;padding:2px 7px;cursor:pointer;margin-left:2px;
+  transition:all 0.15s;flex-shrink:0;
+}
+.card-sizeit:active{background:rgba(0,212,255,0.15)}
 .card-stats-row{display:flex;gap:10px}
 .card-stat{font-family:var(--mono);font-size:10px;color:var(--mid)}
 .card-stat span{color:var(--text)}.card-stat span.hi{color:var(--accent);font-weight:500}.card-stat span.hig{color:var(--gold);font-weight:500}
@@ -124,14 +128,10 @@ body.sizer-active #page-sizer{top:calc(var(--safe-top) + 56px)}
 .card-gap{font-family:var(--head);font-weight:700;font-size:20px;color:var(--green);line-height:1}
 .card-gap.neg{color:var(--red)}
 .pmh-tag{font-family:var(--mono);font-size:9px;color:var(--gold)}
-
-/* Sizer button on card */
-.sizer-link{
-  display:inline-flex;align-items:center;gap:4px;
-  font-family:var(--mono);font-size:9px;color:var(--accent);
-  background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);
-  border-radius:4px;padding:3px 8px;cursor:pointer;margin-top:4px;
-}
+/* Pin button on card right */
+.card-pin{font-size:14px;cursor:pointer;opacity:0.4;transition:opacity 0.15s;line-height:1;padding:2px}
+.card-pin.pinned{opacity:1}
+.card-pin:active{transform:scale(1.3)}
 
 /* ── CARD DETAIL ── */
 .card-detail{display:none;padding:0 14px 14px;border-top:1px solid var(--border);animation:expandIn 0.2s ease}
@@ -155,9 +155,19 @@ body.sizer-active #page-sizer{top:calc(var(--safe-top) + 56px)}
 .news-link-row{margin-top:6px;display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:9px;color:var(--accent)}
 .no-news{font-family:var(--mono);font-size:11px;color:var(--dim);padding:10px 0;text-align:center}
 .no-news a{color:var(--accent);text-decoration:none}
+/* Action row: Google It button at bottom */
 .action-row{display:flex;gap:8px;margin-top:12px}
 .act-btn{flex:1;padding:10px 6px;border-radius:8px;background:var(--bg2);border:1px solid var(--border2);color:var(--mid);font-family:var(--mono);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:4px;transition:all 0.15s}
 .act-btn:active{border-color:var(--accent);color:var(--accent)}
+.act-btn.google-btn{border-color:rgba(0,212,255,0.2);color:var(--accent)}
+.act-btn.google-btn:active{background:rgba(0,212,255,0.08)}
+
+/* ── WATCHLIST PAGE ── */
+#page-watchlist{padding-top:4px}
+.watchlist-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 30px;gap:12px;text-align:center}
+.watchlist-empty-icon{font-size:48px;opacity:0.25}
+.watchlist-empty-title{font-family:var(--head);font-size:18px;color:var(--mid)}
+.watchlist-empty-sub{font-family:var(--mono);font-size:11px;color:var(--dim);line-height:1.6}
 
 /* ── EMPTY STATE ── */
 #empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 30px;gap:12px;text-align:center}
@@ -173,9 +183,12 @@ body.sizer-active #page-sizer{top:calc(var(--safe-top) + 56px)}
   background:var(--bg1);border-top:1px solid var(--border);
   display:flex;z-index:200;
 }
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;transition:all 0.15s;font-family:var(--mono);font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:var(--dim);border:none;background:none}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;transition:all 0.15s;font-family:var(--mono);font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:var(--dim);border:none;background:none;position:relative}
 .nav-item.active{color:var(--accent)}
 .nav-icon{font-size:20px;line-height:1}
+/* Watchlist badge */
+.nav-badge{position:absolute;top:6px;right:calc(50% - 18px);background:var(--gold);color:#000;border-radius:8px;font-family:var(--mono);font-size:8px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;display:none}
+.nav-badge.show{display:block}
 
 /* ── FILTER DRAWER ── */
 #filter-overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.6);backdrop-filter:blur(2px)}
@@ -253,7 +266,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 }
 .sizer-account-input:focus{border-color:var(--green)}
 
-/* Scale buttons */
 .scale-label{font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px}
 .scale-btns{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .scale-btn{
@@ -265,13 +277,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .scale-btn.up{border-color:rgba(0,230,118,0.25);color:var(--green)}
 .scale-btn.down{border-color:rgba(255,64,96,0.2);color:var(--red)}
 
-/* Risk row */
 .sizer-risk-row{display:flex;gap:6px;margin-bottom:14px;align-items:center}
 .sizer-risk-label{font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.12em;white-space:nowrap;margin-right:4px}
 .risk-btn{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--mid);font-family:var(--mono);font-size:12px;padding:9px 4px;cursor:pointer;text-align:center;transition:all 0.15s}
 .risk-btn.active{background:var(--green);color:#000;border-color:var(--green);font-weight:500}
 
-/* Sizer inputs */
 .sizer-inputs{display:flex;flex-direction:column;gap:12px;margin-bottom:14px}
 .sizer-input-group{display:flex;flex-direction:column;gap:6px}
 .sizer-input-label{font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.15em}
@@ -286,14 +296,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .sizer-field:focus{border-color:var(--accent)}
 .sizer-field.stop-field:focus{border-color:var(--red)}
 
-/* Pre-fill badge */
 .prefill-badge{
   font-family:var(--mono);font-size:9px;color:var(--accent);
   background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);
   border-radius:4px;padding:3px 8px;display:inline-block;margin-top:4px;
 }
 
-/* Calc button */
 .sizer-calc-btn{
   width:100%;background:var(--green);color:#000;border:none;border-radius:10px;
   font-family:var(--bebas);font-size:22px;letter-spacing:3px;padding:16px;
@@ -301,16 +309,29 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 }
 .sizer-calc-btn:active{transform:scale(0.98);background:#00c060}
 
-/* Warning */
 .sizer-warning{
   background:rgba(255,64,96,0.06);border:1px solid rgba(255,64,96,0.2);
   border-radius:8px;padding:12px 14px;font-family:var(--mono);font-size:11px;
   color:var(--red);line-height:1.6;display:none;margin-bottom:12px;
 }
 
-/* Results */
 .sizer-results{display:none;flex-direction:column;gap:10px;animation:fadeUp 0.3s ease}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* R-Value hero card */
+.result-r-card{
+  background:var(--bg1);border:1px solid var(--border2);border-radius:14px;
+  padding:18px 24px;display:flex;align-items:center;justify-content:space-between;
+  position:relative;overflow:hidden;
+}
+.result-r-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent)}
+.result-r-label-col{display:flex;flex-direction:column;gap:3px}
+.result-r-label{font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.15em}
+.result-r-sub{font-family:var(--mono);font-size:9px;color:var(--mid)}
+.result-r-value{font-family:var(--bebas);font-size:44px;letter-spacing:1px;line-height:1}
+.result-r-value.r-green{color:var(--green)}
+.result-r-value.r-yellow{color:var(--gold)}
+.result-r-value.r-red{color:var(--red)}
 
 .result-main-card{
   background:var(--bg1);border:1px solid var(--border2);border-radius:14px;
@@ -369,13 +390,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
   <div class="sstat"><div class="sstat-label">Updated</div><div class="sstat-val" id="stat-updated" style="font-size:11px">—</div></div>
 </div>
 
-<!-- MODE TABS -->
-<div id="modetabs">
-  <button class="mtab active" onclick="setMode('premarket')" id="tab-premarket">🌅 Pre-Mkt</button>
-  <button class="mtab" onclick="setMode('regular')" id="tab-regular">📊 Market</button>
-  <button class="mtab" onclick="setMode('all')" id="tab-all">⚡ All</button>
-</div>
-
 <!-- SCANNER PAGE -->
 <div id="page-scanner">
   <div id="stock-list"></div>
@@ -386,6 +400,16 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     <button class="relax-btn" onclick="relaxFilters()">Relax Filters</button>
   </div>
   <div id="last-updated"></div>
+</div>
+
+<!-- WATCHLIST PAGE -->
+<div id="page-watchlist">
+  <div id="watchlist-list"></div>
+  <div id="watchlist-empty" style="display:none" class="watchlist-empty">
+    <div class="watchlist-empty-icon">⭐</div>
+    <div class="watchlist-empty-title">No Pinned Stocks</div>
+    <div class="watchlist-empty-sub">Tap the ⭐ on any stock card<br/>to add it to your watchlist.</div>
+  </div>
 </div>
 
 <!-- SIZER PAGE -->
@@ -446,6 +470,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     <div class="sizer-warning" id="sz-warning"></div>
 
     <div class="sizer-results" id="sz-results">
+      <!-- R-Value Hero -->
+      <div class="result-r-card">
+        <div class="result-r-label-col">
+          <div class="result-r-label">1R Value</div>
+          <div class="result-r-sub">dollar risk per trade</div>
+        </div>
+        <div class="result-r-value r-green" id="sz-rvalue">—</div>
+      </div>
+
       <div class="result-main-card">
         <div class="result-shares-label">Buy Exactly</div>
         <div class="result-shares-num" id="sz-shares">—</div>
@@ -493,6 +526,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
   <button class="nav-item active" id="nav-scanner" onclick="showPage('scanner')">
     <div class="nav-icon">📡</div><span>Scanner</span>
   </button>
+  <button class="nav-item" id="nav-watchlist" onclick="showPage('watchlist')">
+    <div class="nav-icon">⭐</div><span>Watchlist</span>
+    <div class="nav-badge" id="watchlist-badge">0</div>
+  </button>
   <button class="nav-item" id="nav-filters" onclick="openFilters()">
     <div class="nav-icon">🎛️</div><span>Filters</span>
   </button>
@@ -509,6 +546,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 <div id="filter-drawer">
   <div class="drawer-handle"></div>
   <div class="drawer-title">Filters <div class="drawer-close" onclick="closeFilters()">✕</div></div>
+  <!-- PRESETS now inside filter drawer -->
   <div class="drawer-section">
     <div class="ds-label">Quick Presets</div>
     <div class="preset-grid">
@@ -581,8 +619,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     <div class="settings-section">
       <div class="ds-label">Refresh Rate</div>
       <div class="rate-pills" id="rate-pills">
-        <div class="rate-pill" onclick="setRefreshRate(10000)">10s</div>
-        <div class="rate-pill active" onclick="setRefreshRate(15000)">15s</div>
+        <div class="rate-pill active" onclick="setRefreshRate(8000)">8s</div>
+        <div class="rate-pill" onclick="setRefreshRate(15000)">15s</div>
         <div class="rate-pill" onclick="setRefreshRate(30000)">30s</div>
         <div class="rate-pill" onclick="setRefreshRate(60000)">60s</div>
       </div>
@@ -600,23 +638,61 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 
 <script>
 // ═══════════════════════════════════════════════════
-// SCANNY BOI — Scanner + Position Sizer
+// SCANNY BOI v2
 // ═══════════════════════════════════════════════════
 
 const BACKEND    = 'https://apex-scanner-production.up.railway.app';
 const WS_BACKEND = 'wss://apex-scanner-production.up.railway.app';
 const CAT_COLORS = {fda:'#00e676',earnings:'#c084fc',contract:'#00d4ff',ma:'#ff4060',partner:'#00b8d9',sec:'#ffcc00'};
 
+// ── WATCHLIST (persisted via localStorage) ──────────
+const WATCHLIST_KEY = 'sb_watchlist_v2';
+function loadWatchlist() {
+  try { return new Set(JSON.parse(localStorage.getItem(WATCHLIST_KEY) || '[]')); }
+  catch(e) { return new Set(); }
+}
+function saveWatchlist() {
+  localStorage.setItem(WATCHLIST_KEY, JSON.stringify([...STATE.watchlist]));
+  updateWatchlistBadge();
+}
+function toggleWatchlist(ticker, e) {
+  if (e) e.stopPropagation();
+  if (STATE.watchlist.has(ticker)) {
+    STATE.watchlist.delete(ticker);
+  } else {
+    STATE.watchlist.add(ticker);
+  }
+  saveWatchlist();
+  // Update pin icons in both pages without full re-render
+  document.querySelectorAll(`.card-pin[data-ticker="${ticker}"]`).forEach(el => {
+    el.classList.toggle('pinned', STATE.watchlist.has(ticker));
+    el.textContent = STATE.watchlist.has(ticker) ? '⭐' : '☆';
+  });
+  document.querySelectorAll(`#card-${ticker}, #wl-card-${ticker}`).forEach(el => {
+    el.classList.toggle('pinned', STATE.watchlist.has(ticker));
+  });
+  if (STATE.currentPage === 'watchlist') renderWatchlist();
+}
+function updateWatchlistBadge() {
+  const badge = document.getElementById('watchlist-badge');
+  const count = STATE.watchlist.size;
+  badge.textContent = count;
+  badge.classList.toggle('show', count > 0);
+}
+
 const STATE = {
   stocks:[], filtered:[], mode:'premarket', expanded:new Set(),
-  isLive:false, refreshInterval:15000, refreshTimer:null,
+  isLive:false, refreshInterval:8000, refreshTimer:null,
   currentPage:'scanner',
+  watchlist: loadWatchlist(),
   filters:{priceMin:0.5,priceMax:25,volMin:500000,rvolMin:2,gapMin:5,floatMax:500000000,catalyst:false,excludeEtf:true},
   presets:{
     ignition: {priceMin:1,  priceMax:20,volMin:2000000,rvolMin:5,gapMin:8, floatMax:20000000},
     premarket:{priceMin:0.5,priceMax:25,volMin:500000, rvolMin:2,gapMin:5, floatMax:500000000},
     midday:   {priceMin:2,  priceMax:25,volMin:500000, rvolMin:2,gapMin:3, floatMax:500000000},
   },
+  // Track which tickers are currently rendered to avoid full re-renders
+  renderedTickers: [],
 };
 
 // ─── PAGE SWITCHING ──────────────────────────────
@@ -625,10 +701,21 @@ function showPage(page) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('nav-' + page)?.classList.add('active');
 
+  // Hide all pages
+  document.getElementById('page-scanner').style.display = 'none';
+  document.getElementById('page-watchlist').style.display = 'none';
+  document.getElementById('page-sizer').style.display = 'none';
+  document.body.classList.remove('sizer-active','watchlist-active');
+
   if (page === 'sizer') {
     document.body.classList.add('sizer-active');
+    document.getElementById('page-sizer').style.display = 'block';
+  } else if (page === 'watchlist') {
+    document.body.classList.add('watchlist-active');
+    document.getElementById('page-watchlist').style.display = 'block';
+    renderWatchlist();
   } else {
-    document.body.classList.remove('sizer-active');
+    document.getElementById('page-scanner').style.display = 'block';
     if (page === 'scanner') manualRefresh();
   }
 }
@@ -659,81 +746,170 @@ function applyFilters(){
   document.getElementById('stat-matches').textContent=STATE.filtered.length;
   const top=STATE.filtered[0];
   document.getElementById('stat-topgap').textContent=top?top.ticker+' +'+top.gapPct.toFixed(1)+'%':'—';
-  renderCards();
+  patchCards();
 }
 
-// ─── RENDER CARDS ────────────────────────────────
-function renderCards(){
+// ─── SMOOTH CARD PATCHING (no blink) ─────────────
+// Instead of nuking innerHTML every refresh, we diff and patch in place.
+function patchCards(){
   const list=document.getElementById('stock-list');
   const empty=document.getElementById('empty-state');
-  if(!STATE.filtered.length){list.innerHTML='';empty.style.display='flex';return}
+  if(!STATE.filtered.length){
+    list.innerHTML='';
+    STATE.renderedTickers=[];
+    empty.style.display='flex';
+    return;
+  }
   empty.style.display='none';
-  list.innerHTML=STATE.filtered.map((s,i)=>{
-    const floatM=s.float?s.float/1e6:null;
-    const isUltra=floatM&&floatM<10,isLow=floatM&&floatM<20;
-    const tickCls=isUltra?'ultra-float':isLow?'low-float':'';
-    const floatTag=isUltra?'<div class="card-float-tag uf">★ ULTRA LOW FLOAT</div>':isLow?'<div class="card-float-tag lf">LOW FLOAT</div>':floatM?'<div class="card-float-tag">'+floatM.toFixed(1)+'M float</div>':'';
-    const rvolCls=s.rvol>=10?'hig':s.rvol>=5?'hi':'';
-    const isOpen=STATE.expanded.has(s.ticker);
-    const cat=s.catalyst;
-    const isPmh=s.abovePmh||s.breakingPmh;
-    const catChip=cat?`<span class="catalyst-chip ${cat.class}">${cat.label}</span>`:`<span class="catalyst-chip no-catalyst">No Catalyst</span>`;
-    const newsHtml=buildNewsHtml(s);
-    const detail=`
-      <div class="card-detail ${isOpen?'open':''}" id="detail-${s.ticker}">
-        <div class="detail-grid">
-          <div class="dg-item"><div class="dg-label">Prev Close</div><div class="dg-val">$${s.prevClose||'—'}</div></div>
-          <div class="dg-item"><div class="dg-label">Gap %</div><div class="dg-val green">+${s.gapPct}%</div></div>
-          <div class="dg-item"><div class="dg-label">Volume</div><div class="dg-val">${fmt(s.volume)}</div></div>
-          <div class="dg-item"><div class="dg-label">Rel Volume</div><div class="dg-val accent">${s.rvol}×</div></div>
-          <div class="dg-item"><div class="dg-label">PM High</div><div class="dg-val ${isPmh?'gold':''}">$${s.pmHigh||'—'}</div></div>
-          <div class="dg-item"><div class="dg-label">PM Low</div><div class="dg-val">$${s.pmLow||'—'}</div></div>
-          ${floatM?'<div class="dg-item"><div class="dg-label">Float</div><div class="dg-val">'+floatM.toFixed(1)+'M</div></div>':''}
-          ${s.mktCap?'<div class="dg-item"><div class="dg-label">Mkt Cap</div><div class="dg-val">$'+fmt(s.mktCap)+'</div></div>':''}
-        </div>
-        <div class="news-section">
-          <div class="news-section-label">News Catalyst</div>
-          ${newsHtml}
-        </div>
-        <div class="action-row">
-          <div class="act-btn sizer-link" onclick="event.stopPropagation();openSizerWithPrice(${s.price})">🧮 Size It</div>
-          <a class="act-btn" href="https://finance.yahoo.com/quote/${s.ticker}" target="_blank">📈 Yahoo</a>
-          <a class="act-btn" href="https://robinhood.com/stocks/${s.ticker}" target="_blank">📊 Robinhood</a>
-        </div>
-      </div>`;
-    return`<div class="stock-card ${isPmh?'pmh-active':''}" id="card-${s.ticker}" onclick="toggleCard('${s.ticker}')" style="animation-delay:${i*0.04}s">
-      <div class="card-main">
-        <div class="card-ticker-col"><div class="card-ticker ${tickCls}">${s.ticker}</div>${floatTag}</div>
-        <div class="card-middle">
-          <div class="card-price-row">
-            <div class="card-price">$${s.price?s.price.toFixed(2):'—'}</div>
-            <div class="card-chg ${(s.change||0)>=0?'pos':'neg'}">${(s.change||0)>=0?'▲':'▼'} ${Math.abs(s.change||0).toFixed(1)}%</div>
-          </div>
-          <div class="card-stats-row">
-            <div class="card-stat">VOL <span>${fmt(s.volume)}</span></div>
-            <div class="card-stat">RVOL <span class="${rvolCls}">${s.rvol}×</span></div>
-          </div>
-          <div class="card-cat-row">${catChip}</div>
-        </div>
-        <div class="card-right">
-          <div class="card-gap ${(s.gapPct||0)<0?'neg':''}">+${(s.gapPct||0).toFixed(1)}%</div>
-          ${isPmh?'<div class="pmh-tag">⚡ PMH</div>':''}
-        </div>
-      </div>
-      ${detail}
-    </div>`;
-  }).join('');
+
+  const newTickers = STATE.filtered.map(s=>s.ticker);
+  const oldTickers = STATE.renderedTickers;
+
+  // Remove cards that are no longer in results
+  oldTickers.forEach(t => {
+    if (!newTickers.includes(t)) {
+      const el = document.getElementById('card-'+t);
+      if (el) el.remove();
+    }
+  });
+
+  // Add or update cards
+  newTickers.forEach((ticker, i) => {
+    const s = STATE.filtered[i];
+    const existing = document.getElementById('card-'+ticker);
+    if (!existing) {
+      // New ticker — insert at correct position
+      const cardHtml = buildCardHtml(s, i, true);
+      const tmp = document.createElement('div');
+      tmp.innerHTML = cardHtml;
+      const newCard = tmp.firstChild;
+      const refCard = list.children[i];
+      if (refCard) list.insertBefore(newCard, refCard);
+      else list.appendChild(newCard);
+    } else {
+      // Existing ticker — patch only the data fields, preserve expansion state
+      patchCardData(existing, s);
+      // Reorder if position changed
+      const currentIndex = Array.from(list.children).indexOf(existing);
+      if (currentIndex !== i) {
+        const refCard = list.children[i];
+        if (refCard && refCard !== existing) list.insertBefore(existing, refCard);
+        else if (!refCard) list.appendChild(existing);
+      }
+    }
+  });
+
+  STATE.renderedTickers = newTickers;
+
+  // Update timestamp
   const now=new Date();
   const ts=now.toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
   document.getElementById('last-updated').textContent='Last updated '+ts+' ET';
   document.getElementById('stat-updated').textContent=ts;
 }
 
+function patchCardData(cardEl, s) {
+  // Update price
+  const priceEl = cardEl.querySelector('.card-price');
+  if (priceEl) priceEl.textContent = '$'+(s.price?s.price.toFixed(2):'—');
+  // Update change
+  const chgEl = cardEl.querySelector('.card-chg');
+  if (chgEl) {
+    chgEl.textContent = ((s.change||0)>=0?'▲':'▼')+' '+Math.abs(s.change||0).toFixed(1)+'%';
+    chgEl.className = 'card-chg '+((s.change||0)>=0?'pos':'neg');
+  }
+  // Update gap
+  const gapEl = cardEl.querySelector('.card-gap');
+  if (gapEl) {
+    gapEl.textContent = '+'+(s.gapPct||0).toFixed(1)+'%';
+    gapEl.className = 'card-gap '+((s.gapPct||0)<0?'neg':'');
+  }
+  // Update stats row
+  const stats = cardEl.querySelectorAll('.card-stat span');
+  if (stats[0]) stats[0].textContent = fmt(s.volume);
+  if (stats[1]) {
+    stats[1].textContent = s.rvol+'×';
+    const rvolCls = s.rvol>=10?'hig':s.rvol>=5?'hi':'';
+    stats[1].className = rvolCls;
+  }
+  // Update catalyst chip
+  const catRow = cardEl.querySelector('.card-cat-row');
+  if (catRow) {
+    const cat = s.catalyst;
+    catRow.innerHTML = cat
+      ? `<span class="catalyst-chip ${cat.class}">${cat.label}</span>`
+      : `<span class="catalyst-chip no-catalyst">No Catalyst</span>`;
+  }
+  // Update Size It button price
+  const sizeBtn = cardEl.querySelector('.card-sizeit');
+  if (sizeBtn) sizeBtn.setAttribute('onclick', `event.stopPropagation();openSizerWithPrice(${s.price})`);
+}
+
+function buildCardHtml(s, i, isNew=false) {
+  const floatM=s.float?s.float/1e6:null;
+  const isUltra=floatM&&floatM<10,isLow=floatM&&floatM<20;
+  const tickCls=isUltra?'ultra-float':isLow?'low-float':'';
+  const floatTag=isUltra?'<div class="card-float-tag uf">★ ULTRA LOW FLOAT</div>':isLow?'<div class="card-float-tag lf">LOW FLOAT</div>':floatM?'<div class="card-float-tag">'+floatM.toFixed(1)+'M float</div>':'';
+  const rvolCls=s.rvol>=10?'hig':s.rvol>=5?'hi':'';
+  const isOpen=STATE.expanded.has(s.ticker);
+  const cat=s.catalyst;
+  const isPmh=s.abovePmh||s.breakingPmh;
+  const isPinned=STATE.watchlist.has(s.ticker);
+  const catChip=cat?`<span class="catalyst-chip ${cat.class}">${cat.label}</span>`:`<span class="catalyst-chip no-catalyst">No Catalyst</span>`;
+  const newsHtml=buildNewsHtml(s);
+  const detail=`
+    <div class="card-detail ${isOpen?'open':''}" id="detail-${s.ticker}">
+      <div class="detail-grid">
+        <div class="dg-item"><div class="dg-label">Prev Close</div><div class="dg-val">$${s.prevClose||'—'}</div></div>
+        <div class="dg-item"><div class="dg-label">Gap %</div><div class="dg-val green">+${s.gapPct}%</div></div>
+        <div class="dg-item"><div class="dg-label">Volume</div><div class="dg-val">${fmt(s.volume)}</div></div>
+        <div class="dg-item"><div class="dg-label">Rel Volume</div><div class="dg-val accent">${s.rvol}×</div></div>
+        <div class="dg-item"><div class="dg-label">PM High</div><div class="dg-val ${isPmh?'gold':''}">$${s.pmHigh||'—'}</div></div>
+        <div class="dg-item"><div class="dg-label">PM Low</div><div class="dg-val">$${s.pmLow||'—'}</div></div>
+        ${floatM?'<div class="dg-item"><div class="dg-label">Float</div><div class="dg-val">'+floatM.toFixed(1)+'M</div></div>':''}
+        ${s.mktCap?'<div class="dg-item"><div class="dg-label">Mkt Cap</div><div class="dg-val">$'+fmt(s.mktCap)+'</div></div>':''}
+      </div>
+      <div class="news-section">
+        <div class="news-section-label">News Catalyst</div>
+        ${newsHtml}
+      </div>
+      <div class="action-row">
+        <a class="act-btn google-btn" href="https://www.google.com/search?q=%22${encodeURIComponent(s.ticker+' News')}%22" target="_blank" onclick="event.stopPropagation()">🔍 Google It</a>
+        <a class="act-btn" href="https://finance.yahoo.com/quote/${s.ticker}" target="_blank" onclick="event.stopPropagation()">📈 Yahoo</a>
+        <a class="act-btn" href="https://robinhood.com/stocks/${s.ticker}" target="_blank" onclick="event.stopPropagation()">📊 RH</a>
+      </div>
+    </div>`;
+
+  return `<div class="stock-card ${isPmh?'pmh-active':''} ${isPinned?'pinned':''} ${isNew?'card-new':''}" id="card-${s.ticker}" onclick="toggleCard('${s.ticker}')" style="${isNew?'animation-delay:'+i*0.04+'s':''}">
+    <div class="card-main">
+      <div class="card-ticker-col"><div class="card-ticker ${tickCls}">${s.ticker}</div>${floatTag}</div>
+      <div class="card-middle">
+        <div class="card-price-row">
+          <div class="card-price">$${s.price?s.price.toFixed(2):'—'}</div>
+          <div class="card-chg ${(s.change||0)>=0?'pos':'neg'}">${(s.change||0)>=0?'▲':'▼'} ${Math.abs(s.change||0).toFixed(1)}%</div>
+          <div class="card-sizeit" onclick="event.stopPropagation();openSizerWithPrice(${s.price})">🧮 Size It</div>
+        </div>
+        <div class="card-stats-row">
+          <div class="card-stat">VOL <span>${fmt(s.volume)}</span></div>
+          <div class="card-stat">RVOL <span class="${rvolCls}">${s.rvol}×</span></div>
+        </div>
+        <div class="card-cat-row">${catChip}</div>
+      </div>
+      <div class="card-right">
+        <div class="card-gap ${(s.gapPct||0)<0?'neg':''}">+${(s.gapPct||0).toFixed(1)}%</div>
+        ${isPmh?'<div class="pmh-tag">⚡ PMH</div>':''}
+        <div class="card-pin ${isPinned?'pinned':''}" data-ticker="${s.ticker}" onclick="toggleWatchlist('${s.ticker}',event)">${isPinned?'⭐':'☆'}</div>
+      </div>
+    </div>
+    ${detail}
+  </div>`;
+}
+
 function buildNewsHtml(s){
   const news=s.news||[];
   const display=news.length>0?news.slice(0,3):[];
   if(!display.length){
-    return`<div class="no-news">No news via API. Search directly:<br/><br/>
+    return`<div class="no-news">No recent news (72h). Search directly:<br/><br/>
       <a href="https://news.google.com/search?q=${encodeURIComponent(s.ticker+' stock')}" target="_blank">🔍 Google News</a>
       &nbsp;&nbsp;<a href="https://www.benzinga.com/stock/${s.ticker.toLowerCase()}" target="_blank">📰 Benzinga</a>
     </div>`;
@@ -746,6 +922,36 @@ function buildNewsHtml(s){
       <div class="news-meta"><span class="news-source">${n.source||'News'}</span><span class="news-time">${n.timeAgo||''}</span></div>
       <div class="news-link-row">🔗 Tap to read full article</div>
     </a>`;
+  }).join('');
+}
+
+// ─── WATCHLIST RENDER ────────────────────────────
+function renderWatchlist() {
+  const list = document.getElementById('watchlist-list');
+  const empty = document.getElementById('watchlist-empty');
+  if (!STATE.watchlist.size) {
+    list.innerHTML = '';
+    empty.style.display = 'flex';
+    return;
+  }
+  empty.style.display = 'none';
+  // Find pinned stocks from current scan data
+  const pinned = [...STATE.watchlist].map(ticker => {
+    return STATE.stocks.find(s => s.ticker === ticker) || { ticker, price:null, change:0, gapPct:0, volume:0, rvol:0, news:[], catalyst:null, _stale:true };
+  });
+  list.innerHTML = pinned.map((s, i) => {
+    if (s._stale) {
+      return `<div class="stock-card pinned" id="wl-card-${s.ticker}">
+        <div class="card-main">
+          <div class="card-ticker-col"><div class="card-ticker">${s.ticker}</div><div class="card-float-tag" style="color:var(--dim)">not in scan</div></div>
+          <div class="card-middle"><div class="card-price-row"><div class="card-price" style="color:var(--dim)">—</div></div></div>
+          <div class="card-right">
+            <div class="card-pin pinned" data-ticker="${s.ticker}" onclick="toggleWatchlist('${s.ticker}',event)">⭐</div>
+          </div>
+        </div>
+      </div>`;
+    }
+    return buildCardHtml(s, i, false).replace('id="card-', 'id="wl-card-');
   }).join('');
 }
 
@@ -798,6 +1004,8 @@ async function fetchLiveData(){
       if(Array.isArray(data)&&data.length>0){
         if(data[0].ticker&&data[0].ticker.startsWith('DEMO'))return;
         STATE.stocks=data;STATE.isLive=true;updateConnStatus(true);applyFilters();
+        // Refresh watchlist silently if it's open
+        if(STATE.currentPage==='watchlist') renderWatchlist();
       }
     }
   }catch(e){console.warn('Fetch failed:',e.message)}
@@ -820,6 +1028,7 @@ function connectWS(){
         if(msg.type==='scan_results'&&Array.isArray(msg.data)&&msg.data.length>0){
           if(msg.data[0].ticker&&msg.data[0].ticker.startsWith('DEMO'))return;
           STATE.stocks=msg.data;STATE.isLive=true;applyFilters();
+          if(STATE.currentPage==='watchlist') renderWatchlist();
         }
       }catch(err){}
     };
@@ -892,7 +1101,7 @@ function closeSettings(){document.getElementById('settings-overlay').classList.r
 
 function setRefreshRate(ms){
   STATE.refreshInterval=ms;
-  const labels={10000:'10s',15000:'15s',30000:'30s',60000:'60s'};
+  const labels={8000:'8s',15000:'15s',30000:'30s',60000:'60s'};
   document.querySelectorAll('.rate-pill').forEach(p=>{p.classList.toggle('active',p.textContent===labels[ms])});
   clearInterval(STATE.refreshTimer);
   STATE.refreshTimer=setInterval(fetchLiveData,ms);
@@ -903,7 +1112,6 @@ function manualRefresh(){fetchLiveData()}
 // ═══════════════════════════════════════════════════
 // POSITION SIZER LOGIC
 // ═══════════════════════════════════════════════════
-// Load saved account from localStorage
 let sizerAccount = parseFloat(localStorage.getItem('sb_account') || '700');
 let sizerRiskPct = parseFloat(localStorage.getItem('sb_risk') || '0.015');
 
@@ -969,6 +1177,11 @@ function sizerCalc(){
   if(actualRiskPct>3){warnings.push(`⚠️ Risk is ${actualRiskPct.toFixed(1)}% of account — above 3%. Reduce shares or tighten stop.`)}
   if(warnings.length){warnEl.innerHTML=warnings.join('<br><br>');warnEl.style.display='block'}
 
+  // R-Value color tiers: green <$50, yellow $50-$100, red >$100
+  const rValEl = document.getElementById('sz-rvalue');
+  rValEl.textContent = fmtDollar(actualRisk);
+  rValEl.className = 'result-r-value ' + (actualRisk < 50 ? 'r-green' : actualRisk <= 100 ? 'r-yellow' : 'r-red');
+
   document.getElementById('sz-shares').textContent=shares;
   document.getElementById('sz-possize').textContent=fmtDollar(posSize);
   document.getElementById('sz-maxrisk').textContent=fmtDollar(actualRisk);
@@ -990,6 +1203,7 @@ function init(){
   updateClock();
   setInterval(updateClock,1000);
   ['vol','rvol','gap','float'].forEach(updateSliderDisplay);
+  updateWatchlistBadge();
 
   // Restore saved account size
   document.getElementById('sz-account').value = sizerAccount;
@@ -1000,6 +1214,9 @@ function init(){
   document.querySelectorAll('.risk-btn').forEach(b => {
     b.classList.toggle('active', b.textContent === savedRiskLabel);
   });
+
+  // Show scanner page properly
+  document.getElementById('page-scanner').style.display = 'block';
 
   fetchLiveData();
   connectWS();
