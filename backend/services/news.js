@@ -1,8 +1,9 @@
 /**
- * NewsService — v2
- * - 72-hour news filter (hard cutoff)
- * - Shows ALL relevant news, not just exact catalyst matches
- * - Polygon→Finnhub→AlphaVantage fallback chain
+ * NewsService — v3
+ * - No hard age cutoff — return all articles found
+ * - Age filtering handled client-side via news window slider
+ * - Polygon → Finnhub → AlphaVantage fallback chain
+ * - Catalyst classification per article
  */
 
 const axios = require('axios');
@@ -33,34 +34,35 @@ const CATALYST_PATTERNS = [
   { pattern: /uplist|nasdaq|nyse listing/i,                type:'sec',      label:'Exchange Listing', score:6,  class:'cat-sec' },
 ];
 
-// Hard cutoff: only articles published within this many hours
-const NEWS_MAX_AGE_HOURS = 72;
-
 class NewsService {
   constructor({ cache, apiKey }) {
-    this.cache          = cache;
-    this.polygonKey     = process.env.POLYGON_API_KEY || apiKey || '';
-    this.finnhubKey     = process.env.FINNHUB_API_KEY || '';
-    this.alphaVantageKey= process.env.ALPHA_VANTAGE_API_KEY || '';
-    this.source         = process.env.DATA_SOURCE || 'demo';
-    this.newsSource     = process.env.NEWS_SOURCE || this.source;
+    this.cache           = cache;
+    this.polygonKey      = process.env.POLYGON_API_KEY      || apiKey || '';
+    this.finnhubKey      = process.env.FINNHUB_API_KEY      || '';
+    this.alphaVantageKey = process.env.ALPHA_VANTAGE_API_KEY || '';
+    this.source          = process.env.DATA_SOURCE          || 'demo';
   }
 
-  // ─── MAIN ENTRY POINT ─────────────────────────────────
-  async getNewsForTicker(ticker, daysBack = 3) {
-    const cacheKey = 'news_v2_' + ticker;
+  // ─── MAIN ENTRY POINT ─────────────────────────
+  // Returns ALL articles found — no age filtering here
+  // Age/catalyst filtering is done client-side via news window slider
+  async getNewsForTicker(ticker) {
+    const cacheKey = 'news_v3_' + ticker;
     const cached   = this.cache.get(cacheKey);
     if (cached) return cached;
 
     let articles = [];
 
     try {
+      // Try Polygon first — fetch last 7 days to cast a wide net
       if (this.polygonKey) {
-        articles = await this.fetchPolygonNews(ticker, daysBack);
+        articles = await this.fetchPolygonNews(ticker, 7);
       }
+      // Finnhub fallback
       if (!articles.length && this.finnhubKey) {
-        articles = await this.fetchFinnhubNews(ticker, daysBack);
+        articles = await this.fetchFinnhubNews(ticker, 7);
       }
+      // Alpha Vantage last resort
       if (!articles.length && this.alphaVantageKey) {
         articles = await this.fetchAVNews(ticker);
       }
@@ -69,19 +71,12 @@ class NewsService {
       articles = [];
     }
 
-    // ── 72-HOUR HARD CUTOFF ──────────────────────────────
-    const cutoff = Date.now() - (NEWS_MAX_AGE_HOURS * 60 * 60 * 1000);
-    const fresh  = articles.filter(a => {
-      const pub = new Date(a.publishedAt).getTime();
-      return !isNaN(pub) && pub >= cutoff;
-    });
-
-    console.log(`[News] ${ticker}: ${articles.length} raw → ${fresh.length} within 72h`);
+    console.log(`[News] ${ticker}: ${articles.length} raw articles`);
 
     // Remove low-quality filler
-    const quality = fresh.filter(a => !this.isLowQuality(a));
+    const quality = articles.filter(a => !this.isLowQuality(a));
 
-    // Classify each article (keep even if no catalyst match)
+    // Classify each article
     const classified = quality.map(a => ({
       ...a,
       catalyst: this.classifyArticle(a),
@@ -95,14 +90,15 @@ class NewsService {
       return new Date(b.publishedAt) - new Date(a.publishedAt);
     });
 
+    // Return top 5 — no age filter applied here
     const final = classified.slice(0, 5);
 
-    // Cache 10 minutes (shorter than before since we care about freshness)
+    // Cache 10 minutes
     this.cache.set(cacheKey, final, 600);
     return final;
   }
 
-  // ─── POLYGON NEWS ─────────────────────────────────────
+  // ─── POLYGON NEWS ─────────────────────────────
   async fetchPolygonNews(ticker, daysBack) {
     const from = new Date();
     from.setDate(from.getDate() - daysBack);
@@ -129,19 +125,19 @@ class NewsService {
     console.log('[News/Polygon] ' + ticker + ': ' + results.length + ' articles');
 
     return results.map(a => ({
-      headline:    a.title        || '',
-      summary:     a.description  || '',
-      source:      a.publisher?.name || 'Polygon News',
-      url:         a.article_url  || '',
-      publishedAt: a.published_utc || new Date().toISOString(),
+      headline:    a.title             || '',
+      summary:     a.description       || '',
+      source:      a.publisher?.name   || 'Polygon News',
+      url:         a.article_url       || '',
+      publishedAt: a.published_utc     || new Date().toISOString(),
       timeAgo:     this.timeAgo(a.published_utc),
     }));
   }
 
-  // ─── FINNHUB NEWS ─────────────────────────────────────
+  // ─── FINNHUB NEWS ─────────────────────────────
   async fetchFinnhubNews(ticker, daysBack) {
-    const to   = new Date().toISOString().split('T')[0];
-    const from = new Date();
+    const to      = new Date().toISOString().split('T')[0];
+    const from    = new Date();
     from.setDate(from.getDate() - daysBack);
     const fromStr = from.toISOString().split('T')[0];
 
@@ -169,7 +165,7 @@ class NewsService {
     }));
   }
 
-  // ─── ALPHA VANTAGE NEWS ───────────────────────────────
+  // ─── ALPHA VANTAGE NEWS ───────────────────────
   async fetchAVNews(ticker) {
     let res;
     try {
@@ -192,12 +188,12 @@ class NewsService {
       summary:     a.summary || '',
       source:      a.source  || 'Alpha Vantage',
       url:         a.url     || '',
-      publishedAt: a.time_published || new Date().toISOString(),
-      timeAgo:     this.timeAgo(a.time_published),
+      publishedAt: this.parseAVDate(a.time_published),
+      timeAgo:     this.timeAgo(this.parseAVDate(a.time_published)),
     }));
   }
 
-  // ─── HELPERS ──────────────────────────────────────────
+  // ─── HELPERS ──────────────────────────────────
   isLowQuality(article) {
     const text = ((article.headline || '') + ' ' + (article.summary || '')).toLowerCase();
     return LOW_QUALITY_PATTERNS.some(p => p.test(text));
@@ -213,33 +209,28 @@ class NewsService {
     return null;
   }
 
+  // Alpha Vantage date format: 20240115T143000
+  parseAVDate(str) {
+    if (!str) return new Date().toISOString();
+    if (/^\d{8}T\d{6}$/.test(str)) {
+      return str.replace(
+        /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})$/,
+        '$1-$2-$3T$4:$5:$6Z'
+      );
+    }
+    return str;
+  }
+
   timeAgo(isoString) {
     if (!isoString) return '';
-    // Handle Alpha Vantage format: 20240115T143000
-    let parsed = isoString;
-    if (/^\d{8}T\d{6}$/.test(isoString)) {
-      parsed = isoString.replace(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})$/, '$1-$2-$3T$4:$5:$6Z');
-    }
-    const ms   = Date.now() - new Date(parsed).getTime();
+    const ms   = Date.now() - new Date(isoString).getTime();
     const mins = Math.floor(ms / 60000);
     const hrs  = Math.floor(mins / 60);
     const days = Math.floor(hrs / 24);
-    if (days > 0)  return days  + 'd ago';
-    if (hrs  > 0)  return hrs   + 'h ago';
-    if (mins > 0)  return mins  + 'm ago';
+    if (days > 0)  return days + 'd ago';
+    if (hrs  > 0)  return hrs  + 'h ago';
+    if (mins > 0)  return mins + 'm ago';
     return 'Just now';
-  }
-
-  demoNews(ticker) {
-    return [{
-      headline:    'Company Reports Strong Quarterly Earnings Beat',
-      summary:     'Quarterly revenue grew 42% year-over-year, exceeding analyst estimates.',
-      source:      'PR Newswire',
-      url:         'https://news.google.com/search?q=' + ticker + '+stock',
-      publishedAt: new Date().toISOString(),
-      timeAgo:     '2h ago',
-      catalyst:    { type:'earnings', label:'Earnings Beat', score:8, class:'cat-earnings' },
-    }];
   }
 }
 
