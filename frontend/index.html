@@ -60,7 +60,6 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .sstat-val{font-family:var(--mono);font-size:16px;font-weight:500;color:var(--text);line-height:1.1}
 .sstat-val.green{color:var(--green)}.sstat-val.accent{color:var(--accent)}
 
-
 /* ── PAGES ── */
 #page-scanner,#page-sizer,#page-watchlist{
   position:fixed;
@@ -71,7 +70,6 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 }
 #page-scanner{display:block}
 
-/* hide stats/mode tabs when on sizer */
 body.sizer-active #statsstrip{display:none}
 body.sizer-active #page-scanner,
 body.sizer-active #page-watchlist{display:none}
@@ -86,7 +84,6 @@ body.watchlist-active #page-watchlist{display:block}
   margin:8px 12px;background:var(--bg1);border:1px solid var(--border);
   border-radius:12px;overflow:hidden;cursor:pointer;transition:border-color 0.15s;
 }
-/* NEW: cards entering for first time animate in, updates don't */
 .stock-card.card-new{animation:cardIn 0.3s ease both}
 .stock-card:active{opacity:0.85}
 .stock-card.pmh-active{border-color:var(--gold)}
@@ -103,7 +100,6 @@ body.watchlist-active #page-watchlist{display:block}
 .card-price{font-family:var(--mono);font-size:18px;font-weight:500;color:var(--text)}
 .card-chg{font-family:var(--mono);font-size:13px;font-weight:500}
 .card-chg.pos{color:var(--green)}.card-chg.neg{color:var(--red)}
-/* Size It inline badge next to price */
 .card-sizeit{
   display:inline-flex;align-items:center;gap:3px;
   font-family:var(--mono);font-size:9px;color:var(--accent);
@@ -128,7 +124,6 @@ body.watchlist-active #page-watchlist{display:block}
 .card-gap{font-family:var(--head);font-weight:700;font-size:20px;color:var(--green);line-height:1}
 .card-gap.neg{color:var(--red)}
 .pmh-tag{font-family:var(--mono);font-size:9px;color:var(--gold)}
-/* Pin button on card right */
 .card-pin{font-size:14px;cursor:pointer;opacity:0.4;transition:opacity 0.15s;line-height:1;padding:2px}
 .card-pin.pinned{opacity:1}
 .card-pin:active{transform:scale(1.3)}
@@ -155,7 +150,6 @@ body.watchlist-active #page-watchlist{display:block}
 .news-link-row{margin-top:6px;display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:9px;color:var(--accent)}
 .no-news{font-family:var(--mono);font-size:11px;color:var(--dim);padding:10px 0;text-align:center}
 .no-news a{color:var(--accent);text-decoration:none}
-/* Action row: Google It button at bottom */
 .action-row{display:flex;gap:8px;margin-top:12px}
 .act-btn{flex:1;padding:10px 6px;border-radius:8px;background:var(--bg2);border:1px solid var(--border2);color:var(--mid);font-family:var(--mono);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:4px;transition:all 0.15s}
 .act-btn:active{border-color:var(--accent);color:var(--accent)}
@@ -186,14 +180,13 @@ body.watchlist-active #page-watchlist{display:block}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;transition:all 0.15s;font-family:var(--mono);font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:var(--dim);border:none;background:none;position:relative}
 .nav-item.active{color:var(--accent)}
 .nav-icon{font-size:20px;line-height:1}
-/* Watchlist badge */
 .nav-badge{position:absolute;top:6px;right:calc(50% - 18px);background:var(--gold);color:#000;border-radius:8px;font-family:var(--mono);font-size:8px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;display:none}
 .nav-badge.show{display:block}
 
 /* ── FILTER DRAWER ── */
 #filter-overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.6);backdrop-filter:blur(2px)}
 #filter-overlay.open{display:block}
-#filter-drawer{position:fixed;bottom:0;left:0;right:0;z-index:301;background:var(--bg1);border-top:1px solid var(--border2);border-radius:20px 20px 0 0;padding:0 0 calc(20px + var(--safe-bot));transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);max-height:88vh;overflow-y:auto}
+#filter-drawer{position:fixed;bottom:0;left:0;right:0;z-index:301;background:var(--bg1);border-top:1px solid var(--border2);border-radius:20px 20px 0 0;padding:0 0 calc(20px + var(--safe-bot));transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);max-height:92vh;overflow-y:auto}
 #filter-drawer.open{transform:translateY(0)}
 .drawer-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 16px}
 .drawer-title{font-family:var(--head);font-weight:700;font-size:18px;color:var(--text);padding:0 20px 4px;display:flex;justify-content:space-between;align-items:center}
@@ -225,6 +218,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .toggle-sw.on{background:var(--accent);border-color:var(--accent)}
 .toggle-sw::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--dim);transition:all 0.2s}
 .toggle-sw.on::after{left:22px;background:var(--bg)}
+
+/* ── NEWS WINDOW PILLS (new) ── */
+.news-window-pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.nw-pill{padding:7px 14px;border-radius:20px;background:var(--bg2);border:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--mid);cursor:pointer;transition:all 0.15s}
+.nw-pill.active{background:rgba(0,212,255,0.1);border-color:var(--accent);color:var(--accent)}
+
 .apply-btn{margin:16px 20px 0;width:calc(100% - 40px);padding:14px;background:var(--accent);color:var(--bg);border:none;border-radius:10px;font-family:var(--head);font-weight:700;font-size:16px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer}
 
 /* ── SETTINGS ── */
@@ -249,106 +248,56 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
    POSITION SIZER STYLES
 ══════════════════════════════════════ */
 .sizer-wrap{padding:16px 16px calc(20px + var(--safe-bot))}
-
-.sizer-account-card{
-  background:var(--bg1);border:1px solid var(--border2);border-radius:14px;
-  padding:16px;margin-bottom:14px;
-}
+.sizer-account-card{background:var(--bg1);border:1px solid var(--border2);border-radius:14px;padding:16px;margin-bottom:14px;}
 .sizer-account-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
 .sizer-account-label{font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:4px}
 .sizer-account-val{font-family:var(--bebas);font-size:42px;color:var(--green);line-height:1;letter-spacing:1px}
 .sizer-account-input-wrap{position:relative;margin-bottom:10px}
 .sizer-account-prefix{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-family:var(--bebas);font-size:22px;color:var(--dim);pointer-events:none}
-.sizer-account-input{
-  width:100%;background:var(--bg2);border:1px solid var(--border2);
-  color:var(--text);font-family:var(--bebas);font-size:22px;letter-spacing:1px;
-  padding:10px 12px 10px 28px;border-radius:8px;outline:none;-webkit-appearance:none;
-}
+.sizer-account-input{width:100%;background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-family:var(--bebas);font-size:22px;letter-spacing:1px;padding:10px 12px 10px 28px;border-radius:8px;outline:none;-webkit-appearance:none;}
 .sizer-account-input:focus{border-color:var(--green)}
-
 .scale-label{font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px}
 .scale-btns{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.scale-btn{
-  padding:8px 4px;background:var(--bg2);border:1px solid var(--border);
-  border-radius:8px;font-family:var(--mono);font-size:10px;color:var(--mid);
-  cursor:pointer;text-align:center;transition:all 0.15s;
-}
+.scale-btn{padding:8px 4px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;font-family:var(--mono);font-size:10px;color:var(--mid);cursor:pointer;text-align:center;transition:all 0.15s;}
 .scale-btn:active{border-color:var(--accent);color:var(--accent)}
 .scale-btn.up{border-color:rgba(0,230,118,0.25);color:var(--green)}
 .scale-btn.down{border-color:rgba(255,64,96,0.2);color:var(--red)}
-
 .sizer-risk-row{display:flex;gap:6px;margin-bottom:14px;align-items:center}
 .sizer-risk-label{font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.12em;white-space:nowrap;margin-right:4px}
 .risk-btn{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--mid);font-family:var(--mono);font-size:12px;padding:9px 4px;cursor:pointer;text-align:center;transition:all 0.15s}
 .risk-btn.active{background:var(--green);color:#000;border-color:var(--green);font-weight:500}
-
 .sizer-inputs{display:flex;flex-direction:column;gap:12px;margin-bottom:14px}
 .sizer-input-group{display:flex;flex-direction:column;gap:6px}
 .sizer-input-label{font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.15em}
 .sizer-input-wrap{position:relative}
 .sizer-prefix{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-family:var(--bebas);font-size:24px;color:var(--dim);pointer-events:none}
-.sizer-field{
-  width:100%;background:var(--bg2);border:1px solid var(--border2);
-  color:var(--text);font-family:var(--bebas);font-size:36px;letter-spacing:1px;
-  padding:14px 14px 14px 32px;border-radius:10px;outline:none;-webkit-appearance:none;
-  transition:border-color 0.15s;
-}
+.sizer-field{width:100%;background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-family:var(--bebas);font-size:36px;letter-spacing:1px;padding:14px 14px 14px 32px;border-radius:10px;outline:none;-webkit-appearance:none;transition:border-color 0.15s;}
 .sizer-field:focus{border-color:var(--accent)}
 .sizer-field.stop-field:focus{border-color:var(--red)}
-
-.prefill-badge{
-  font-family:var(--mono);font-size:9px;color:var(--accent);
-  background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);
-  border-radius:4px;padding:3px 8px;display:inline-block;margin-top:4px;
-}
-
-.sizer-calc-btn{
-  width:100%;background:var(--green);color:#000;border:none;border-radius:10px;
-  font-family:var(--bebas);font-size:22px;letter-spacing:3px;padding:16px;
-  cursor:pointer;transition:all 0.15s;margin-bottom:14px;
-}
+.prefill-badge{font-family:var(--mono);font-size:9px;color:var(--accent);background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);border-radius:4px;padding:3px 8px;display:inline-block;margin-top:4px;}
+.sizer-calc-btn{width:100%;background:var(--green);color:#000;border:none;border-radius:10px;font-family:var(--bebas);font-size:22px;letter-spacing:3px;padding:16px;cursor:pointer;transition:all 0.15s;margin-bottom:14px;}
 .sizer-calc-btn:active{transform:scale(0.98);background:#00c060}
-
-.sizer-warning{
-  background:rgba(255,64,96,0.06);border:1px solid rgba(255,64,96,0.2);
-  border-radius:8px;padding:12px 14px;font-family:var(--mono);font-size:11px;
-  color:var(--red);line-height:1.6;display:none;margin-bottom:12px;
-}
-
+.sizer-warning{background:rgba(255,64,96,0.06);border:1px solid rgba(255,64,96,0.2);border-radius:8px;padding:12px 14px;font-family:var(--mono);font-size:11px;color:var(--red);line-height:1.6;display:none;margin-bottom:12px;}
 .sizer-results{display:none;flex-direction:column;gap:10px;animation:fadeUp 0.3s ease}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-
-/* R-Value hero card */
-.result-r-card{
-  background:var(--bg1);border:1px solid var(--border2);border-radius:14px;
-  padding:18px 24px;display:flex;align-items:center;justify-content:space-between;
-  position:relative;overflow:hidden;
-}
+.result-r-card{background:var(--bg1);border:1px solid var(--border2);border-radius:14px;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden;}
 .result-r-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent)}
 .result-r-label-col{display:flex;flex-direction:column;gap:3px}
 .result-r-label{font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.15em}
 .result-r-sub{font-family:var(--mono);font-size:9px;color:var(--mid)}
 .result-r-value{font-family:var(--bebas);font-size:44px;letter-spacing:1px;line-height:1}
-.result-r-value.r-green{color:var(--green)}
-.result-r-value.r-yellow{color:var(--gold)}
-.result-r-value.r-red{color:var(--red)}
-
-.result-main-card{
-  background:var(--bg1);border:1px solid var(--border2);border-radius:14px;
-  padding:24px;text-align:center;position:relative;overflow:hidden;
-}
+.result-r-value.r-green{color:var(--green)}.result-r-value.r-yellow{color:var(--gold)}.result-r-value.r-red{color:var(--red)}
+.result-main-card{background:var(--bg1);border:1px solid var(--border2);border-radius:14px;padding:24px;text-align:center;position:relative;overflow:hidden;}
 .result-main-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--green)}
 .result-shares-label{font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:6px}
 .result-shares-num{font-family:var(--bebas);font-size:80px;color:var(--green);line-height:1;letter-spacing:2px}
 .result-shares-unit{font-family:var(--mono);font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:0.15em;margin-top:4px}
-
 .result-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .result-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px}
 .rc-label{font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px}
 .rc-value{font-family:var(--bebas);font-size:26px;letter-spacing:1px}
 .rc-value.green{color:var(--green)}.rc-value.red{color:var(--red)}.rc-value.gold{color:var(--gold)}.rc-value.white{color:var(--text)}
 .rc-sub{font-family:var(--mono);font-size:9px;color:var(--dim);margin-top:2px}
-
 .trade-plan-card{background:var(--bg1);border:1px solid var(--border2);border-radius:12px;overflow:hidden}
 .tp-header-row{background:var(--bg2);padding:10px 16px;font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.15em;border-bottom:1px solid var(--border)}
 .tp-row{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border);font-size:13px}
@@ -415,8 +364,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 <!-- SIZER PAGE -->
 <div id="page-sizer">
   <div class="sizer-wrap">
-
-    <!-- Account Card -->
     <div class="sizer-account-card">
       <div class="sizer-account-label">Account Size</div>
       <div class="sizer-account-val" id="sz-account-display">$700</div>
@@ -436,8 +383,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         <div class="scale-btn up" onclick="scaleAccount(2500)">+$2.5K</div>
       </div>
     </div>
-
-    <!-- Risk -->
     <div class="sizer-risk-row">
       <span class="sizer-risk-label">Risk %</span>
       <div class="risk-btn" onclick="sizerSetRisk(1,this)">1%</div>
@@ -445,8 +390,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
       <div class="risk-btn" onclick="sizerSetRisk(2,this)">2%</div>
       <div class="risk-btn" onclick="sizerSetRisk(3,this)">3%</div>
     </div>
-
-    <!-- Inputs -->
     <div class="sizer-inputs">
       <div class="sizer-input-group">
         <div class="sizer-input-label">Entry Price</div>
@@ -464,13 +407,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         </div>
       </div>
     </div>
-
     <button class="sizer-calc-btn" onclick="sizerCalc()">CALCULATE POSITION</button>
-
     <div class="sizer-warning" id="sz-warning"></div>
-
     <div class="sizer-results" id="sz-results">
-      <!-- R-Value Hero -->
       <div class="result-r-card">
         <div class="result-r-label-col">
           <div class="result-r-label">1R Value</div>
@@ -478,33 +417,16 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         </div>
         <div class="result-r-value r-green" id="sz-rvalue">—</div>
       </div>
-
       <div class="result-main-card">
         <div class="result-shares-label">Buy Exactly</div>
         <div class="result-shares-num" id="sz-shares">—</div>
         <div class="result-shares-unit">shares</div>
       </div>
       <div class="result-grid">
-        <div class="result-card">
-          <div class="rc-label">Position Size</div>
-          <div class="rc-value white" id="sz-possize">—</div>
-          <div class="rc-sub">total cost</div>
-        </div>
-        <div class="result-card">
-          <div class="rc-label">Max Risk</div>
-          <div class="rc-value red" id="sz-maxrisk">—</div>
-          <div class="rc-sub">if stopped out</div>
-        </div>
-        <div class="result-card">
-          <div class="rc-label">Target (2R)</div>
-          <div class="rc-value green" id="sz-target">—</div>
-          <div class="rc-sub">exit full position</div>
-        </div>
-        <div class="result-card">
-          <div class="rc-label">R Distance</div>
-          <div class="rc-value gold" id="sz-rdist">—</div>
-          <div class="rc-sub">entry − stop</div>
-        </div>
+        <div class="result-card"><div class="rc-label">Position Size</div><div class="rc-value white" id="sz-possize">—</div><div class="rc-sub">total cost</div></div>
+        <div class="result-card"><div class="rc-label">Max Risk</div><div class="rc-value red" id="sz-maxrisk">—</div><div class="rc-sub">if stopped out</div></div>
+        <div class="result-card"><div class="rc-label">Target (2R)</div><div class="rc-value green" id="sz-target">—</div><div class="rc-sub">exit full position</div></div>
+        <div class="result-card"><div class="rc-label">R Distance</div><div class="rc-value gold" id="sz-rdist">—</div><div class="rc-sub">entry − stop</div></div>
       </div>
       <div class="trade-plan-card">
         <div class="tp-header-row">📋 Trade Plan</div>
@@ -517,7 +439,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         <div class="tp-row"><span class="tp-lbl">% of Account</span><span class="tp-val gold" id="tp-riskpct">—</span></div>
       </div>
     </div>
-
   </div>
 </div>
 
@@ -546,7 +467,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 <div id="filter-drawer">
   <div class="drawer-handle"></div>
   <div class="drawer-title">Filters <div class="drawer-close" onclick="closeFilters()">✕</div></div>
-  <!-- PRESETS now inside filter drawer -->
   <div class="drawer-section">
     <div class="ds-label">Quick Presets</div>
     <div class="preset-grid">
@@ -586,6 +506,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     <div class="filter-item">
       <div class="fi-header"><div class="fi-label">Maximum Float</div><div class="fi-val" id="fv-float">500M</div></div>
       <input type="range" id="f-float" min="1000000" max="500000000" step="1000000" value="500000000" oninput="updateSliderDisplay('float')"/>
+    </div>
+  </div>
+  <!-- NEWS WINDOW — new section -->
+  <div class="drawer-section">
+    <div class="ds-label">News Window — catalyst chip only shows if news within this window</div>
+    <div class="news-window-pills" id="news-window-pills">
+      <div class="nw-pill" onclick="setNewsWindow(6,this)">6h</div>
+      <div class="nw-pill" onclick="setNewsWindow(12,this)">12h</div>
+      <div class="nw-pill active" onclick="setNewsWindow(24,this)">24h</div>
+      <div class="nw-pill" onclick="setNewsWindow(48,this)">48h</div>
+      <div class="nw-pill" onclick="setNewsWindow(168,this)">7d</div>
+      <div class="nw-pill" onclick="setNewsWindow(0,this)">Always</div>
     </div>
   </div>
   <div class="drawer-section">
@@ -645,7 +577,7 @@ const BACKEND    = 'https://apex-scanner-production.up.railway.app';
 const WS_BACKEND = 'wss://apex-scanner-production.up.railway.app';
 const CAT_COLORS = {fda:'#00e676',earnings:'#c084fc',contract:'#00d4ff',ma:'#ff4060',partner:'#00b8d9',sec:'#ffcc00'};
 
-// ── WATCHLIST (persisted via localStorage) ──────────
+// ── WATCHLIST ────────────────────────────────────
 const WATCHLIST_KEY = 'sb_watchlist_v2';
 function loadWatchlist() {
   try { return new Set(JSON.parse(localStorage.getItem(WATCHLIST_KEY) || '[]')); }
@@ -657,13 +589,9 @@ function saveWatchlist() {
 }
 function toggleWatchlist(ticker, e) {
   if (e) e.stopPropagation();
-  if (STATE.watchlist.has(ticker)) {
-    STATE.watchlist.delete(ticker);
-  } else {
-    STATE.watchlist.add(ticker);
-  }
+  if (STATE.watchlist.has(ticker)) STATE.watchlist.delete(ticker);
+  else STATE.watchlist.add(ticker);
   saveWatchlist();
-  // Update pin icons in both pages without full re-render
   document.querySelectorAll(`.card-pin[data-ticker="${ticker}"]`).forEach(el => {
     el.classList.toggle('pinned', STATE.watchlist.has(ticker));
     el.textContent = STATE.watchlist.has(ticker) ? '⭐' : '☆';
@@ -685,28 +613,55 @@ const STATE = {
   isLive:false, refreshInterval:8000, refreshTimer:null,
   currentPage:'scanner',
   watchlist: loadWatchlist(),
+  newsWindowHours: 24, // catalyst chip only shows if news within this window
   filters:{priceMin:0.5,priceMax:25,volMin:500000,rvolMin:2,gapMin:5,floatMax:500000000,catalyst:false,excludeEtf:true},
   presets:{
     ignition: {priceMin:1,  priceMax:20,volMin:2000000,rvolMin:5,gapMin:8, floatMax:20000000},
     premarket:{priceMin:0.5,priceMax:25,volMin:500000, rvolMin:2,gapMin:5, floatMax:500000000},
     midday:   {priceMin:2,  priceMax:25,volMin:500000, rvolMin:2,gapMin:3, floatMax:500000000},
   },
-  // Track which tickers are currently rendered to avoid full re-renders
   renderedTickers: [],
 };
+
+// ── NEWS WINDOW ──────────────────────────────────
+function setNewsWindow(hours, btn) {
+  STATE.newsWindowHours = hours;
+  document.querySelectorAll('.nw-pill').forEach(p => p.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  // Re-render cards so catalyst chips update immediately
+  patchCards();
+}
+
+function isNewsRecent(publishedAt) {
+  if (STATE.newsWindowHours === 0) return true; // "Always" mode
+  if (!publishedAt) return false;
+  const ms = Date.now() - new Date(publishedAt).getTime();
+  return ms <= STATE.newsWindowHours * 60 * 60 * 1000;
+}
+
+// Returns catalyst only if there's a matching article within the news window
+function getEffectiveCatalyst(s) {
+  const news = s.news || [];
+  for (const article of news) {
+    if (isNewsRecent(article.publishedAt) && article.catalyst) {
+      return article.catalyst;
+    }
+  }
+  // Fall back to stock-level catalyst if it has no publishedAt to check
+  // (keeps backwards compat with old enrichment format)
+  if (s.catalyst && !news.length) return s.catalyst;
+  return null;
+}
 
 // ─── PAGE SWITCHING ──────────────────────────────
 function showPage(page) {
   STATE.currentPage = page;
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('nav-' + page)?.classList.add('active');
-
-  // Hide all pages
   document.getElementById('page-scanner').style.display = 'none';
   document.getElementById('page-watchlist').style.display = 'none';
   document.getElementById('page-sizer').style.display = 'none';
   document.body.classList.remove('sizer-active','watchlist-active');
-
   if (page === 'sizer') {
     document.body.classList.add('sizer-active');
     document.getElementById('page-sizer').style.display = 'block';
@@ -739,7 +694,8 @@ function applyFilters(){
     if(s.rvol>0&&s.rvol<f.rvolMin)return false;
     if(s.gapPct>0&&s.gapPct<f.gapMin)return false;
     if(s.float&&s.float>f.floatMax)return false;
-    if(f.catalyst&&!s.catalyst)return false;
+    // Catalyst filter uses news window
+    if(f.catalyst&&!getEffectiveCatalyst(s))return false;
     return true;
   });
   STATE.filtered.sort((a,b)=>b.gapPct-a.gapPct);
@@ -749,8 +705,7 @@ function applyFilters(){
   patchCards();
 }
 
-// ─── SMOOTH CARD PATCHING (no blink) ─────────────
-// Instead of nuking innerHTML every refresh, we diff and patch in place.
+// ─── SMOOTH CARD PATCHING ────────────────────────
 function patchCards(){
   const list=document.getElementById('stock-list');
   const empty=document.getElementById('empty-state');
@@ -761,24 +716,18 @@ function patchCards(){
     return;
   }
   empty.style.display='none';
-
   const newTickers = STATE.filtered.map(s=>s.ticker);
   const oldTickers = STATE.renderedTickers;
-
-  // Remove cards that are no longer in results
   oldTickers.forEach(t => {
     if (!newTickers.includes(t)) {
       const el = document.getElementById('card-'+t);
       if (el) el.remove();
     }
   });
-
-  // Add or update cards
   newTickers.forEach((ticker, i) => {
     const s = STATE.filtered[i];
     const existing = document.getElementById('card-'+ticker);
     if (!existing) {
-      // New ticker — insert at correct position
       const cardHtml = buildCardHtml(s, i, true);
       const tmp = document.createElement('div');
       tmp.innerHTML = cardHtml;
@@ -787,9 +736,7 @@ function patchCards(){
       if (refCard) list.insertBefore(newCard, refCard);
       else list.appendChild(newCard);
     } else {
-      // Existing ticker — patch only the data fields, preserve expansion state
       patchCardData(existing, s);
-      // Reorder if position changed
       const currentIndex = Array.from(list.children).indexOf(existing);
       if (currentIndex !== i) {
         const refCard = list.children[i];
@@ -798,10 +745,7 @@ function patchCards(){
       }
     }
   });
-
   STATE.renderedTickers = newTickers;
-
-  // Update timestamp
   const now=new Date();
   const ts=now.toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
   document.getElementById('last-updated').textContent='Last updated '+ts+' ET';
@@ -809,38 +753,32 @@ function patchCards(){
 }
 
 function patchCardData(cardEl, s) {
-  // Update price
   const priceEl = cardEl.querySelector('.card-price');
   if (priceEl) priceEl.textContent = '$'+(s.price?s.price.toFixed(2):'—');
-  // Update change
   const chgEl = cardEl.querySelector('.card-chg');
   if (chgEl) {
     chgEl.textContent = ((s.change||0)>=0?'▲':'▼')+' '+Math.abs(s.change||0).toFixed(1)+'%';
     chgEl.className = 'card-chg '+((s.change||0)>=0?'pos':'neg');
   }
-  // Update gap
   const gapEl = cardEl.querySelector('.card-gap');
   if (gapEl) {
     gapEl.textContent = '+'+(s.gapPct||0).toFixed(1)+'%';
     gapEl.className = 'card-gap '+((s.gapPct||0)<0?'neg':'');
   }
-  // Update stats row
   const stats = cardEl.querySelectorAll('.card-stat span');
   if (stats[0]) stats[0].textContent = fmt(s.volume);
   if (stats[1]) {
     stats[1].textContent = s.rvol+'×';
-    const rvolCls = s.rvol>=10?'hig':s.rvol>=5?'hi':'';
-    stats[1].className = rvolCls;
+    stats[1].className = s.rvol>=10?'hig':s.rvol>=5?'hi':'';
   }
-  // Update catalyst chip
+  // Catalyst chip uses news window
   const catRow = cardEl.querySelector('.card-cat-row');
   if (catRow) {
-    const cat = s.catalyst;
+    const cat = getEffectiveCatalyst(s);
     catRow.innerHTML = cat
       ? `<span class="catalyst-chip ${cat.class}">${cat.label}</span>`
       : `<span class="catalyst-chip no-catalyst">No Catalyst</span>`;
   }
-  // Update Size It button price
   const sizeBtn = cardEl.querySelector('.card-sizeit');
   if (sizeBtn) sizeBtn.setAttribute('onclick', `event.stopPropagation();openSizerWithPrice(${s.price})`);
 }
@@ -852,9 +790,9 @@ function buildCardHtml(s, i, isNew=false) {
   const floatTag=isUltra?'<div class="card-float-tag uf">★ ULTRA LOW FLOAT</div>':isLow?'<div class="card-float-tag lf">LOW FLOAT</div>':floatM?'<div class="card-float-tag">'+floatM.toFixed(1)+'M float</div>':'';
   const rvolCls=s.rvol>=10?'hig':s.rvol>=5?'hi':'';
   const isOpen=STATE.expanded.has(s.ticker);
-  const cat=s.catalyst;
   const isPmh=s.abovePmh||s.breakingPmh;
   const isPinned=STATE.watchlist.has(s.ticker);
+  const cat=getEffectiveCatalyst(s);
   const catChip=cat?`<span class="catalyst-chip ${cat.class}">${cat.label}</span>`:`<span class="catalyst-chip no-catalyst">No Catalyst</span>`;
   const newsHtml=buildNewsHtml(s);
   const detail=`
@@ -907,18 +845,18 @@ function buildCardHtml(s, i, isNew=false) {
 
 function buildNewsHtml(s){
   const news=s.news||[];
-  const display=news.length>0?news.slice(0,3):[];
-  if(!display.length){
-    return`<div class="no-news">No recent news (72h). Search directly:<br/><br/>
+  if(!news.length){
+    return`<div class="no-news">No news via API. Search directly:<br/><br/>
       <a href="https://news.google.com/search?q=${encodeURIComponent(s.ticker+' stock')}" target="_blank">🔍 Google News</a>
       &nbsp;&nbsp;<a href="https://www.benzinga.com/stock/${s.ticker.toLowerCase()}" target="_blank">📰 Benzinga</a>
     </div>`;
   }
-  return display.map(n=>{
+  return news.slice(0,3).map(n=>{
     const catColor=n.catalyst?(CAT_COLORS[n.catalyst.type]||'#6a90b0'):'#6a90b0';
+    const isRecent=isNewsRecent(n.publishedAt);
     const url=n.url&&n.url!=='#'?n.url:'https://news.google.com/search?q='+encodeURIComponent((s.ticker||'')+' '+(n.headline||''));
-    return`<a class="news-card" href="${url}" target="_blank" onclick="event.stopPropagation()">
-      <div class="news-card-top"><div class="news-cat-dot" style="background:${catColor}"></div><div class="news-headline">${n.headline||'View article'}</div></div>
+    return`<a class="news-card" href="${url}" target="_blank" onclick="event.stopPropagation()" style="${isRecent?'':'opacity:0.5'}">
+      <div class="news-card-top"><div class="news-cat-dot" style="background:${catColor}"></div><div class="news-headline">${n.headline||'View article'}${!isRecent?' <span style="color:var(--dim);font-size:9px">(older)</span>':''}</div></div>
       <div class="news-meta"><span class="news-source">${n.source||'News'}</span><span class="news-time">${n.timeAgo||''}</span></div>
       <div class="news-link-row">🔗 Tap to read full article</div>
     </a>`;
@@ -929,13 +867,8 @@ function buildNewsHtml(s){
 function renderWatchlist() {
   const list = document.getElementById('watchlist-list');
   const empty = document.getElementById('watchlist-empty');
-  if (!STATE.watchlist.size) {
-    list.innerHTML = '';
-    empty.style.display = 'flex';
-    return;
-  }
+  if (!STATE.watchlist.size) { list.innerHTML = ''; empty.style.display = 'flex'; return; }
   empty.style.display = 'none';
-  // Find pinned stocks from current scan data
   const pinned = [...STATE.watchlist].map(ticker => {
     return STATE.stocks.find(s => s.ticker === ticker) || { ticker, price:null, change:0, gapPct:0, volume:0, rvol:0, news:[], catalyst:null, _stale:true };
   });
@@ -945,9 +878,7 @@ function renderWatchlist() {
         <div class="card-main">
           <div class="card-ticker-col"><div class="card-ticker">${s.ticker}</div><div class="card-float-tag" style="color:var(--dim)">not in scan</div></div>
           <div class="card-middle"><div class="card-price-row"><div class="card-price" style="color:var(--dim)">—</div></div></div>
-          <div class="card-right">
-            <div class="card-pin pinned" data-ticker="${s.ticker}" onclick="toggleWatchlist('${s.ticker}',event)">⭐</div>
-          </div>
+          <div class="card-right"><div class="card-pin pinned" data-ticker="${s.ticker}" onclick="toggleWatchlist('${s.ticker}',event)">⭐</div></div>
         </div>
       </div>`;
     }
@@ -962,7 +893,7 @@ function toggleCard(ticker){
   if(d)d.classList.toggle('open',STATE.expanded.has(ticker));
 }
 
-// ─── SIZE IT SHORTCUT ────────────────────────────
+// ─── SIZE IT ─────────────────────────────────────
 function openSizerWithPrice(price) {
   document.getElementById('sz-entry').value = price.toFixed(2);
   document.getElementById('sz-prefill-badge').style.display = 'inline-block';
@@ -991,7 +922,7 @@ function updateClock(){
   document.getElementById('stat-scanning').textContent=STATE.isLive?'8,400+':'—';
 }
 
-// ─── LIVE DATA ───────────────────────────────────
+// ─── FETCH DATA ──────────────────────────────────
 async function fetchLiveData(){
   try{
     const res=await fetch(BACKEND+'/api/scanner?'+new URLSearchParams({
@@ -1004,8 +935,9 @@ async function fetchLiveData(){
       if(Array.isArray(data)&&data.length>0){
         if(data[0].ticker&&data[0].ticker.startsWith('DEMO'))return;
         STATE.stocks=data;STATE.isLive=true;updateConnStatus(true);applyFilters();
-        // Refresh watchlist silently if it's open
         if(STATE.currentPage==='watchlist') renderWatchlist();
+      } else if(Array.isArray(data)&&data.length===0){
+        STATE.isLive=true;updateConnStatus(true);applyFilters();
       }
     }
   }catch(e){console.warn('Fetch failed:',e.message)}
@@ -1110,7 +1042,7 @@ function setRefreshRate(ms){
 function manualRefresh(){fetchLiveData()}
 
 // ═══════════════════════════════════════════════════
-// POSITION SIZER LOGIC
+// POSITION SIZER
 // ═══════════════════════════════════════════════════
 let sizerAccount = parseFloat(localStorage.getItem('sb_account') || '700');
 let sizerRiskPct = parseFloat(localStorage.getItem('sb_risk') || '0.015');
@@ -1146,42 +1078,31 @@ function sizerCalc(){
   const stop=parseFloat(document.getElementById('sz-stop').value);
   const warnEl=document.getElementById('sz-warning');
   const resEl=document.getElementById('sz-results');
-
   warnEl.style.display='none';warnEl.textContent='';
-
   if(!entry||!stop||isNaN(entry)||isNaN(stop)){resEl.style.display='none';return}
-
   if(stop>=entry){
     warnEl.innerHTML='⚠️ Stop price must be below entry price.';
     warnEl.style.display='block';resEl.style.display='none';return;
   }
-
   const riskAmt=sizerAccount*sizerRiskPct;
   const rDist=entry-stop;
-  const rawShares=riskAmt/rDist;
-  const shares=Math.floor(rawShares);
-
+  const shares=Math.floor(riskAmt/rDist);
   if(shares<1){
-    warnEl.innerHTML=`⚠️ Stop too wide for account size. At ${(sizerRiskPct*100).toFixed(1)}% risk (${fmtDollar(riskAmt)}), can't buy 1 share with ${fmtDollar(rDist)} stop. Tighten stop or find lower-priced setup.`;
+    warnEl.innerHTML=`⚠️ Stop too wide for account size. At ${(sizerRiskPct*100).toFixed(1)}% risk (${fmtDollar(riskAmt)}), can't buy 1 share with ${fmtDollar(rDist)} stop.`;
     warnEl.style.display='block';resEl.style.display='none';return;
   }
-
   const posSize=shares*entry;
   const actualRisk=shares*rDist;
   const target=entry+(rDist*2);
   const reward=shares*rDist*2;
   const actualRiskPct=(actualRisk/sizerAccount)*100;
-
   const warnings=[];
-  if(posSize>sizerAccount*0.5){warnings.push(`⚠️ Position (${fmtDollar(posSize)}) is over 50% of account. Consider reducing size.`)}
-  if(actualRiskPct>3){warnings.push(`⚠️ Risk is ${actualRiskPct.toFixed(1)}% of account — above 3%. Reduce shares or tighten stop.`)}
+  if(posSize>sizerAccount*0.5)warnings.push(`⚠️ Position (${fmtDollar(posSize)}) is over 50% of account.`);
+  if(actualRiskPct>3)warnings.push(`⚠️ Risk is ${actualRiskPct.toFixed(1)}% of account — above 3%.`);
   if(warnings.length){warnEl.innerHTML=warnings.join('<br><br>');warnEl.style.display='block'}
-
-  // R-Value color tiers: green <$50, yellow $50-$100, red >$100
-  const rValEl = document.getElementById('sz-rvalue');
-  rValEl.textContent = fmtDollar(actualRisk);
-  rValEl.className = 'result-r-value ' + (actualRisk < 50 ? 'r-green' : actualRisk <= 100 ? 'r-yellow' : 'r-red');
-
+  const rValEl=document.getElementById('sz-rvalue');
+  rValEl.textContent=fmtDollar(actualRisk);
+  rValEl.className='result-r-value '+(actualRisk<50?'r-green':actualRisk<=100?'r-yellow':'r-red');
   document.getElementById('sz-shares').textContent=shares;
   document.getElementById('sz-possize').textContent=fmtDollar(posSize);
   document.getElementById('sz-maxrisk').textContent=fmtDollar(actualRisk);
@@ -1194,7 +1115,6 @@ function sizerCalc(){
   document.getElementById('tp-riskamt').textContent='−'+fmtDollar(actualRisk);
   document.getElementById('tp-reward').textContent='+'+fmtDollar(reward);
   document.getElementById('tp-riskpct').textContent=actualRiskPct.toFixed(2)+'%';
-
   resEl.style.display='flex';
 }
 
@@ -1204,20 +1124,13 @@ function init(){
   setInterval(updateClock,1000);
   ['vol','rvol','gap','float'].forEach(updateSliderDisplay);
   updateWatchlistBadge();
-
-  // Restore saved account size
   document.getElementById('sz-account').value = sizerAccount;
   document.getElementById('sz-account-display').textContent = '$' + sizerAccount.toLocaleString('en-US',{maximumFractionDigits:0});
-
-  // Restore saved risk % and highlight correct button
   const savedRiskLabel = (sizerRiskPct * 100).toString().replace(/\.0$/,'') + '%';
   document.querySelectorAll('.risk-btn').forEach(b => {
     b.classList.toggle('active', b.textContent === savedRiskLabel);
   });
-
-  // Show scanner page properly
   document.getElementById('page-scanner').style.display = 'block';
-
   fetchLiveData();
   connectWS();
   STATE.refreshTimer=setInterval(fetchLiveData,STATE.refreshInterval);
