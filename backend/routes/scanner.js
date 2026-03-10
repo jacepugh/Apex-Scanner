@@ -8,13 +8,15 @@ const router  = express.Router();
 // GET /api/scanner — run a scan with optional filter params
 router.get('/', async (req, res) => {
   const { scanner } = req.app.locals;
+
+  // Use ?? instead of || so that 0 values are preserved (0 is a valid filter)
   const filters = {
-    priceMin:  parseFloat(req.query.priceMin)  || undefined,
-    priceMax:  parseFloat(req.query.priceMax)  || undefined,
-    volMin:    parseInt(req.query.volMin)       || undefined,
-    rvolMin:   parseFloat(req.query.rvolMin)    || undefined,
-    gapMin:    parseFloat(req.query.gapMin)     || undefined,
-    floatMax:  parseInt(req.query.floatMax)     || undefined,
+    priceMin:  req.query.priceMin  !== undefined ? parseFloat(req.query.priceMin)  : undefined,
+    priceMax:  req.query.priceMax  !== undefined ? parseFloat(req.query.priceMax)  : undefined,
+    volMin:    req.query.volMin    !== undefined ? parseInt(req.query.volMin)       : undefined,
+    rvolMin:   req.query.rvolMin   !== undefined ? parseFloat(req.query.rvolMin)   : undefined,
+    gapMin:    req.query.gapMin    !== undefined ? parseFloat(req.query.gapMin)    : undefined,
+    floatMax:  req.query.floatMax  !== undefined ? parseInt(req.query.floatMax)    : undefined,
     catalyst:  req.query.catalyst === 'true',
     excludeEtf:req.query.excludeEtf !== 'false',
   };
