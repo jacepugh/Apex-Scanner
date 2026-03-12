@@ -148,6 +148,8 @@ body.watchlist-active #page-watchlist{display:block}
 .card-right{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
 .card-gap{font-family:var(--head);font-weight:700;font-size:20px;color:var(--green);line-height:1}
 .card-gap.neg{color:var(--red)}
+.card-gap.tier2{color:var(--green)}
+.card-gap.tier3{color:var(--gold);text-shadow:0 0 8px rgba(255,204,0,0.4)}
 .pmh-tag{font-family:var(--mono);font-size:9px;color:var(--gold)}
 .card-pin{font-size:14px;cursor:pointer;opacity:0.4;transition:opacity 0.15s;line-height:1;padding:2px}
 .card-pin.pinned{opacity:1}
@@ -509,14 +511,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     </div>
   </div>
   <div class="drawer-section">
-    <div class="ds-label">Volume</div>
+    <div class="ds-label">Activity</div>
     <div class="filter-item">
-      <div class="fi-header"><div class="fi-label">Min Volume</div><div class="fi-val" id="fv-vol">500K</div></div>
-      <input type="range" id="f-vol" min="0" max="10000000" step="100000" value="500000" oninput="updateSliderDisplay('vol')"/>
+      <div class="fi-header"><div class="fi-label">Min Dollar Volume</div><div class="fi-val" id="fv-dvol">$0</div></div>
+      <input type="range" id="f-dvol" min="0" max="2000000" step="25000" value="0" oninput="updateSliderDisplay('dvol')"/>
     </div>
     <div class="filter-item">
-      <div class="fi-header"><div class="fi-label">Min Relative Vol</div><div class="fi-val" id="fv-rvol">2×</div></div>
-      <input type="range" id="f-rvol" min="0" max="20" step="0.5" value="2" oninput="updateSliderDisplay('rvol')"/>
+      <div class="fi-header"><div class="fi-label">Min Float Rotation</div><div class="fi-val" id="fv-frot">0%</div></div>
+      <input type="range" id="f-frot" min="0" max="100" step="1" value="0" oninput="updateSliderDisplay('frot')"/>
     </div>
   </div>
   <div class="drawer-section">
@@ -639,11 +641,11 @@ const STATE = {
   currentPage:'scanner',
   watchlist: loadWatchlist(),
   newsWindowHours: 24, // catalyst chip only shows if news within this window
-  filters:{priceMin:0.5,priceMax:25,volMin:500000,rvolMin:2,gapMin:5,floatMax:500000000,catalyst:false,excludeEtf:true},
+  filters:{priceMin:0.5,priceMax:25,dollarVolMin:0,floatRotMin:0,gapMin:5,floatMax:50000000,catalyst:false,excludeEtf:true},
   presets:{
-    ignition: {priceMin:1,  priceMax:20,volMin:2000000,rvolMin:5,gapMin:8, floatMax:20000000},
-    premarket:{priceMin:0.5,priceMax:25,volMin:500000, rvolMin:2,gapMin:5, floatMax:500000000},
-    midday:   {priceMin:2,  priceMax:25,volMin:500000, rvolMin:2,gapMin:3, floatMax:500000000},
+    ignition: {priceMin:1,  priceMax:20,dollarVolMin:500000,floatRotMin:15,gapMin:10,floatMax:10000000},
+    premarket:{priceMin:0.5,priceMax:25,dollarVolMin:150000,floatRotMin:5, gapMin:5, floatMax:50000000},
+    midday:   {priceMin:2,  priceMax:25,dollarVolMin:250000,floatRotMin:0, gapMin:3, floatMax:100000000},
   },
   renderedTickers: [],
 };
@@ -715,15 +717,19 @@ function applyFilters(){
   const f=STATE.filters;
   STATE.filtered=STATE.stocks.filter(s=>{
     if(!s.price||s.price<f.priceMin||s.price>f.priceMax)return false;
-    if(s.volume>0&&s.volume<f.volMin)return false;
-    if(s.rvol>0&&s.rvol<f.rvolMin)return false;
+    if(f.dollarVolMin>0&&s.dollarVolume>0&&s.dollarVolume<f.dollarVolMin)return false;
+    if(f.floatRotMin>0&&s.floatRotation!==null&&s.floatRotation!==undefined&&s.floatRotation<f.floatRotMin)return false;
     if(s.gapPct>0&&s.gapPct<f.gapMin)return false;
     if(s.float&&s.float>f.floatMax)return false;
-    // Catalyst filter uses news window
     if(f.catalyst&&!getEffectiveCatalyst(s))return false;
     return true;
   });
-  STATE.filtered.sort((a,b)=>b.gapPct-a.gapPct);
+  // Sort by gap tier desc, then gap % desc
+  STATE.filtered.sort((a,b)=>{
+    const ta=a.gapTier||0,tb=b.gapTier||0;
+    if(tb!==ta)return tb-ta;
+    return b.gapPct-a.gapPct;
+  });
   document.getElementById('stat-matches').textContent=STATE.filtered.length;
   const top=STATE.filtered[0];
   document.getElementById('stat-topgap').textContent=top?top.ticker+' +'+top.gapPct.toFixed(1)+'%':'—';
@@ -791,10 +797,10 @@ function patchCardData(cardEl, s) {
     gapEl.className = 'card-gap '+((s.gapPct||0)<0?'neg':'');
   }
   const stats = cardEl.querySelectorAll('.card-stat span');
-  if (stats[0]) stats[0].textContent = fmt(s.volume);
+  if (stats[0]) stats[0].textContent = s.dollarVolume>0?fmt(s.dollarVolume):'—';
   if (stats[1]) {
-    stats[1].textContent = s.rvol+'×';
-    stats[1].className = s.rvol>=10?'hig':s.rvol>=5?'hi':'';
+    stats[1].textContent = (s.floatRotation!==null&&s.floatRotation!==undefined)?s.floatRotation.toFixed(1)+'%':'—';
+    stats[1].className = s.floatRotation>=25?'hig':s.floatRotation>=10?'hi':'';
   }
   // Catalyst chip uses news window
   const catRow = cardEl.querySelector('.card-cat-row');
@@ -813,7 +819,8 @@ function buildCardHtml(s, i, isNew=false) {
   const isUltra=floatM&&floatM<10,isLow=floatM&&floatM<20;
   const tickCls=isUltra?'ultra-float':isLow?'low-float':'';
   const floatTag=isUltra?'<div class="card-float-tag uf">★ ULTRA LOW FLOAT</div>':isLow?'<div class="card-float-tag lf">LOW FLOAT</div>':floatM?'<div class="card-float-tag">'+floatM.toFixed(1)+'M float</div>':'';
-  const rvolCls=s.rvol>=10?'hig':s.rvol>=5?'hi':'';
+  const frotCls=s.floatRotation>=25?'hig':s.floatRotation>=10?'hi':'';
+  const gapTierCls=s.gapTier>=3?'tier3':s.gapTier>=2?'tier2':'';
   const isOpen=STATE.expanded.has(s.ticker);
   const isPmh=s.abovePmh||s.breakingPmh;
   const isPinned=STATE.watchlist.has(s.ticker);
@@ -825,8 +832,10 @@ function buildCardHtml(s, i, isNew=false) {
       <div class="detail-grid">
         <div class="dg-item"><div class="dg-label">Prev Close</div><div class="dg-val">$${s.prevClose||'—'}</div></div>
         <div class="dg-item"><div class="dg-label">Gap %</div><div class="dg-val green">+${s.gapPct}%</div></div>
-        <div class="dg-item"><div class="dg-label">Volume</div><div class="dg-val">${fmt(s.volume)}</div></div>
-        <div class="dg-item"><div class="dg-label">Rel Volume</div><div class="dg-val accent">${s.rvol}×</div></div>
+        <div class="dg-item"><div class="dg-label">$ Volume</div><div class="dg-val accent">${fmt(s.dollarVolume)}</div></div>
+        <div class="dg-item"><div class="dg-label">Float Rotation</div><div class="dg-val ${s.floatRotation>=25?'gold':s.floatRotation>=10?'green':''}">${ s.floatRotation!==null&&s.floatRotation!==undefined?s.floatRotation.toFixed(1)+'%':'N/A'}</div></div>
+        <div class="dg-item"><div class="dg-label">Shares Vol</div><div class="dg-val">${fmt(s.volume)}</div></div>
+        <div class="dg-item"><div class="dg-label">RVOL (ref)</div><div class="dg-val">${s.rvol}×</div></div>
         <div class="dg-item"><div class="dg-label">PM High</div><div class="dg-val ${isPmh?'gold':''}">$${s.pmHigh||'—'}</div></div>
         <div class="dg-item"><div class="dg-label">PM Low</div><div class="dg-val">$${s.pmLow||'—'}</div></div>
         ${floatM?'<div class="dg-item"><div class="dg-label">Float</div><div class="dg-val">'+floatM.toFixed(1)+'M</div></div>':''}
@@ -853,13 +862,13 @@ function buildCardHtml(s, i, isNew=false) {
           <div class="card-sizeit" onclick="event.stopPropagation();openSizerWithPrice(${s.price})">🧮 Size It</div>
         </div>
         <div class="card-stats-row">
-          <div class="card-stat">VOL <span>${fmt(s.volume)}</span></div>
-          <div class="card-stat">RVOL <span class="${rvolCls}">${s.rvol}×</span></div>
+          <div class="card-stat">$VOL <span>${s.dollarVolume>0?fmt(s.dollarVolume):'—'}</span></div>
+          <div class="card-stat">FROT <span class="${frotCls}">${s.floatRotation!==null&&s.floatRotation!==undefined?s.floatRotation.toFixed(1)+'%':'—'}</span></div>
         </div>
         <div class="card-cat-row">${catChip}</div>
       </div>
       <div class="card-right">
-        <div class="card-gap ${(s.gapPct||0)<0?'neg':''}">+${(s.gapPct||0).toFixed(1)}%</div>
+        <div class="card-gap ${(s.gapPct||0)<0?'neg':gapTierCls}">+${(s.gapPct||0).toFixed(1)}%</div>
         ${isPmh?'<div class="pmh-tag">⚡ PMH</div>':''}
         <div class="card-pin ${isPinned?'pinned':''}" data-ticker="${s.ticker}" onclick="toggleWatchlist('${s.ticker}',event)">${isPinned?'⭐':'☆'}</div>
       </div>
@@ -983,7 +992,7 @@ async function fetchLiveData(){
   try{
     const res=await fetch(BACKEND+'/api/scanner?'+new URLSearchParams({
       priceMin:STATE.filters.priceMin,priceMax:STATE.filters.priceMax,
-      volMin:STATE.filters.volMin,rvolMin:STATE.filters.rvolMin,
+      dollarVolMin:STATE.filters.dollarVolMin,floatRotMin:STATE.filters.floatRotMin,
       gapMin:STATE.filters.gapMin,floatMax:STATE.filters.floatMax,
     }));
     if(res.ok){
@@ -1034,15 +1043,15 @@ function applyAndClose(){applyDrawerFilters();closeFilters();fetchLiveData()}
 function applyDrawerFilters(){
   STATE.filters.priceMin=parseFloat(document.getElementById('f-price-min').value)||0.5;
   STATE.filters.priceMax=parseFloat(document.getElementById('f-price-max').value)||25;
-  STATE.filters.volMin=parseInt(document.getElementById('f-vol').value);
-  STATE.filters.rvolMin=parseFloat(document.getElementById('f-rvol').value);
+  STATE.filters.dollarVolMin=parseInt(document.getElementById('f-dvol').value)||0;
+  STATE.filters.floatRotMin=parseFloat(document.getElementById('f-frot').value)||0;
   STATE.filters.gapMin=parseFloat(document.getElementById('f-gap').value);
   STATE.filters.floatMax=parseInt(document.getElementById('f-float').value);
   applyFilters();
 }
 
 function updateSliderDisplay(type){
-  const map={vol:{el:'f-vol',disp:'fv-vol',fn:v=>fmt(parseInt(v))},rvol:{el:'f-rvol',disp:'fv-rvol',fn:v=>parseFloat(v).toFixed(1)+'×'},gap:{el:'f-gap',disp:'fv-gap',fn:v=>v+'%'},float:{el:'f-float',disp:'fv-float',fn:v=>fmt(parseInt(v))}};
+  const map={dvol:{el:'f-dvol',disp:'fv-dvol',fn:v=>{ const n=parseInt(v); return n>=1000000?'$'+(n/1000000).toFixed(1)+'M':n>=1000?'$'+(n/1000).toFixed(0)+'K':'$0'; }},frot:{el:'f-frot',disp:'fv-frot',fn:v=>v+'%'},gap:{el:'f-gap',disp:'fv-gap',fn:v=>v+'%'},float:{el:'f-float',disp:'fv-float',fn:v=>fmt(parseInt(v))}};
   const m=map[type];if(!m)return;
   document.getElementById(m.disp).textContent=m.fn(document.getElementById(m.el).value);
 }
@@ -1060,21 +1069,21 @@ function loadPreset(name){
   Object.assign(STATE.filters,p);
   document.getElementById('f-price-min').value=p.priceMin;
   document.getElementById('f-price-max').value=p.priceMax;
-  document.getElementById('f-vol').value=p.volMin;
-  document.getElementById('f-rvol').value=p.rvolMin;
+  document.getElementById('f-dvol').value=p.dollarVolMin;
+  document.getElementById('f-frot').value=p.floatRotMin;
   document.getElementById('f-gap').value=p.gapMin;
   document.getElementById('f-float').value=p.floatMax;
-  ['vol','rvol','gap','float'].forEach(updateSliderDisplay);
+  ['dvol','frot','gap','float'].forEach(updateSliderDisplay);
   applyFilters();
 }
 
 function relaxFilters(){
-  STATE.filters.gapMin=0;STATE.filters.volMin=0;STATE.filters.rvolMin=0;
+  STATE.filters.gapMin=0;STATE.filters.dollarVolMin=0;STATE.filters.floatRotMin=0;
   STATE.filters.floatMax=500000000;STATE.filters.catalyst=false;
-  document.getElementById('f-gap').value=0;document.getElementById('f-vol').value=0;
-  document.getElementById('f-rvol').value=0;document.getElementById('f-float').value=500000000;
+  document.getElementById('f-gap').value=0;document.getElementById('f-dvol').value=0;
+  document.getElementById('f-frot').value=0;document.getElementById('f-float').value=500000000;
   document.getElementById('t-catalyst').classList.remove('on');
-  ['vol','rvol','gap','float'].forEach(updateSliderDisplay);
+  ['dvol','frot','gap','float'].forEach(updateSliderDisplay);
   applyFilters();
 }
 
@@ -1179,7 +1188,7 @@ function sizerCalc(){
 function init(){
   updateClock();
   setInterval(updateClock,1000);
-  ['vol','rvol','gap','float'].forEach(updateSliderDisplay);
+  ['dvol','frot','gap','float'].forEach(updateSliderDisplay);
   updateWatchlistBadge();
   document.getElementById('sz-account').value = sizerAccount;
   document.getElementById('sz-account-display').textContent = '$' + sizerAccount.toLocaleString('en-US',{maximumFractionDigits:0});
