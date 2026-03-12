@@ -1036,9 +1036,8 @@ function setScanningState(state) {
     el.innerHTML = '<span class="scanning-pulse"><span class="sp-dot"></span><span class="sp-dot"></span><span class="sp-dot"></span></span>';
   } else if (state === 'done') {
     el.textContent = '8,400+';
-  } else {
-    el.textContent = '—';
   }
+  // idle state intentionally does nothing — keeps dots showing
 }
 
 async function fetchLiveData(){
@@ -1060,7 +1059,7 @@ async function fetchLiveData(){
         STATE.isLive=true;updateConnStatus(true);applyFilters();
       }
     }
-  }catch(e){console.warn('Fetch failed:',e.message);setScanningState('idle');return;}
+  }catch(e){console.warn('Fetch failed:',e.message);return;}
   // Only show 8,400+ if we actually got stocks — otherwise keep dots to show it's still trying
   if(gotData) setScanningState('done');
 }
