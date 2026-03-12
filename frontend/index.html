@@ -350,6 +350,19 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 </style>
 </head>
 <body>
+<div id="errbanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#ff4060;color:#fff;font-family:monospace;font-size:11px;padding:8px 12px;white-space:pre-wrap;word-break:break-all;max-height:40vh;overflow-y:auto"></div>
+<script>
+window.onerror = function(msg, src, line, col, err) {
+  var b = document.getElementById('errbanner');
+  b.style.display = 'block';
+  b.textContent += '❌ ' + msg + '\n   at ' + (src||'').split('/').pop() + ':' + line + '\n\n';
+};
+window.addEventListener('unhandledrejection', function(e) {
+  var b = document.getElementById('errbanner');
+  b.style.display = 'block';
+  b.textContent += '⚠️ ' + (e.reason?.message || e.reason || 'Promise rejected') + '\n\n';
+});
+</script>
 
 <!-- HEADER -->
 <header id="header">
