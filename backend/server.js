@@ -59,6 +59,7 @@ app.locals.wss     = wss;
 app.use('/api/scanner', scannerRoutes);
 app.use('/api/news',    newsRoutes);
 app.use('/api/alerts',  alertRoutes);
+app.use('/api/pulse', require('./routes/pulse'));
 
 // Health check
 app.get('/api/health', (req, res) => {
