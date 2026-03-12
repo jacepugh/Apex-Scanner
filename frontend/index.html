@@ -1028,20 +1028,23 @@ function showSkeletons() {
 }
 
 function setScanningState(state) {
-  // state: 'idle' | 'scanning' | 'done'
   const el = document.getElementById('stat-scanning');
+  if (!el) return;
+  // Don't re-render dots if already scanning — keeps animation smooth
   if (state === 'scanning') {
+    if (el.querySelector('.scanning-pulse')) return;
     el.innerHTML = '<span class="scanning-pulse"><span class="sp-dot"></span><span class="sp-dot"></span><span class="sp-dot"></span></span>';
   } else if (state === 'done') {
-    el.innerHTML = '8,400+';
+    el.textContent = '8,400+';
   } else {
-    el.innerHTML = '—';
+    el.textContent = '—';
   }
 }
 
 async function fetchLiveData(){
   setScanningState('scanning');
   showSkeletons();
+  let gotData = false;
   try{
     const res=await fetch(BACKEND+'/api/scanner?'+new URLSearchParams({
       priceMin:STATE.filters.priceMin,priceMax:STATE.filters.priceMax,
@@ -1052,13 +1055,14 @@ async function fetchLiveData(){
       const data=await res.json();
       if(Array.isArray(data)&&data.length>0){
         if(data[0].ticker&&data[0].ticker.startsWith('DEMO')){setScanningState('idle');return;}
-        STATE.stocks=data;STATE.isLive=true;updateConnStatus(true);applyFilters();
+        STATE.stocks=data;STATE.isLive=true;gotData=true;updateConnStatus(true);applyFilters();
       } else if(Array.isArray(data)&&data.length===0){
         STATE.isLive=true;updateConnStatus(true);applyFilters();
       }
     }
-  }catch(e){console.warn('Fetch failed:',e.message);setScanningState('idle');}
-  setScanningState('done');
+  }catch(e){console.warn('Fetch failed:',e.message);setScanningState('idle');return;}
+  // Only show 8,400+ if we actually got stocks — otherwise keep dots to show it's still trying
+  if(gotData) setScanningState('done');
 }
 
 function updateConnStatus(live){
