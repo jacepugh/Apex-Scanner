@@ -86,7 +86,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .skel-right{width:36px;height:22px;background:var(--bg3);border-radius:4px;flex-shrink:0}
 
 /* ── PAGES ── */
-#page-scanner,#page-sizer,#page-watchlist{
+#page-scanner,#page-sizer,#page-pulse{
   position:fixed;
   top:calc(var(--safe-top) + 102px);
   bottom:calc(var(--safe-bot) + 60px);
@@ -97,12 +97,11 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 
 body.sizer-active #statsstrip{display:none}
 body.sizer-active #page-scanner,
-body.sizer-active #page-watchlist{display:none}
 body.sizer-active #page-sizer{display:block;top:calc(var(--safe-top) + 56px)}
 
-body.watchlist-active #page-scanner{display:none}
-body.watchlist-active #page-sizer{display:none}
-body.watchlist-active #page-watchlist{display:block}
+body.pulse-active #page-scanner{display:none}
+body.pulse-active #page-sizer{display:none}
+body.pulse-active #page-pulse{display:block}
 
 /* ── STOCK CARDS ── */
 .stock-card{
@@ -183,12 +182,24 @@ body.watchlist-active #page-watchlist{display:block}
 .act-btn.google-btn{border-color:rgba(0,212,255,0.2);color:var(--accent)}
 .act-btn.google-btn:active{background:rgba(0,212,255,0.08)}
 
-/* ── WATCHLIST PAGE ── */
-#page-watchlist{padding-top:4px}
-.watchlist-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 30px;gap:12px;text-align:center}
-.watchlist-empty-icon{font-size:48px;opacity:0.25}
-.watchlist-empty-title{font-family:var(--head);font-size:18px;color:var(--mid)}
-.watchlist-empty-sub{font-family:var(--mono);font-size:11px;color:var(--dim);line-height:1.6}
+/* ── PULSE PAGE ── */
+#page-pulse{padding:12px}
+.pulse-header{font-family:var(--mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--dim);margin:0 2px 10px}
+.pulse-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pulse-tile{background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;transition:border-color 0.3s}
+.pulse-tile.up{border-color:rgba(0,230,118,0.35)}
+.pulse-tile.down{border-color:rgba(255,64,96,0.35)}
+.pulse-tile.warn{border-color:rgba(255,204,0,0.6);background:rgba(255,204,0,0.04)}
+.pt-sym{font-family:var(--head);font-weight:700;font-size:18px;letter-spacing:0.04em;color:var(--text)}
+.pt-name{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:0.06em}
+.pt-price{font-family:var(--mono);font-size:22px;font-weight:500;color:var(--text);margin-top:6px;line-height:1}
+.pt-chg{font-family:var(--mono);font-size:13px;margin-top:2px}
+.pt-chg.pos{color:var(--green)}.pt-chg.neg{color:var(--red)}
+.pt-chg.warn{color:var(--gold)}
+.vix-warn{margin-top:10px;background:rgba(255,64,96,0.08);border:1px solid rgba(255,64,96,0.3);border-radius:10px;padding:12px 14px;font-family:var(--mono);font-size:11px;color:var(--red);text-align:center;letter-spacing:0.05em;display:none}
+.vix-warn.show{display:block}
+.pulse-updated{font-family:var(--mono);font-size:9px;color:var(--dim);text-align:center;margin-top:14px}
+.pt-loading{color:var(--dim);font-size:13px}
 
 /* ── EMPTY STATE ── */
 #empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 30px;gap:12px;text-align:center}
@@ -378,14 +389,19 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
   <div id="last-updated"></div>
 </div>
 
-<!-- WATCHLIST PAGE -->
-<div id="page-watchlist">
-  <div id="watchlist-list"></div>
-  <div id="watchlist-empty" style="display:none" class="watchlist-empty">
-    <div class="watchlist-empty-icon">⭐</div>
-    <div class="watchlist-empty-title">No Pinned Stocks</div>
-    <div class="watchlist-empty-sub">Tap the ⭐ on any stock card<br/>to add it to your watchlist.</div>
+<!-- PULSE PAGE -->
+<div id="page-pulse">
+  <div class="pulse-header">Market Pulse — Pre-Market Context</div>
+  <div class="pulse-grid" id="pulse-grid">
+    <div class="pulse-tile" id="pt-SPY"><div class="pt-sym">SPY</div><div class="pt-name">S&amp;P 500 ETF</div><div class="pt-price pt-loading">—</div><div class="pt-chg">—</div></div>
+    <div class="pulse-tile" id="pt-QQQ"><div class="pt-sym">QQQ</div><div class="pt-name">NASDAQ ETF</div><div class="pt-price pt-loading">—</div><div class="pt-chg">—</div></div>
+    <div class="pulse-tile" id="pt-IWM"><div class="pt-sym">IWM</div><div class="pt-name">Small Cap ETF</div><div class="pt-price pt-loading">—</div><div class="pt-chg">—</div></div>
+    <div class="pulse-tile" id="pt-VIX"><div class="pt-sym">VIX</div><div class="pt-name">Volatility Index</div><div class="pt-price pt-loading">—</div><div class="pt-chg">—</div></div>
+    <div class="pulse-tile" id="pt-XBI"><div class="pt-sym">XBI</div><div class="pt-name">Biotech ETF</div><div class="pt-price pt-loading">—</div><div class="pt-chg">—</div></div>
+    <div class="pulse-tile" id="pt-BTC"><div class="pt-sym">BTC</div><div class="pt-name">Bitcoin — Risk Sentiment</div><div class="pt-price pt-loading">—</div><div class="pt-chg">—</div></div>
   </div>
+  <div class="vix-warn" id="vix-warn">⚠️ VIX ABOVE 25 — SKIP TRADING TODAY</div>
+  <div class="pulse-updated" id="pulse-updated">Tap to refresh</div>
 </div>
 
 <!-- SIZER PAGE -->
@@ -474,9 +490,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
   <button class="nav-item active" id="nav-scanner" onclick="showPage('scanner')">
     <div class="nav-icon">📡</div><span>Scanner</span>
   </button>
-  <button class="nav-item" id="nav-watchlist" onclick="showPage('watchlist')">
-    <div class="nav-icon">⭐</div><span>Watchlist</span>
-    <div class="nav-badge" id="watchlist-badge">0</div>
+  <button class="nav-item" id="nav-pulse" onclick="showPage('pulse')">
+    <div class="nav-icon">📊</div><span>Pulse</span>
   </button>
   <button class="nav-item" id="nav-filters" onclick="openFilters()">
     <div class="nav-icon">🎛️</div><span>Filters</span>
@@ -604,321 +619,79 @@ const BACKEND    = 'https://apex-scanner-production.up.railway.app';
 const WS_BACKEND = 'wss://apex-scanner-production.up.railway.app';
 const CAT_COLORS = {fda:'#00e676',earnings:'#c084fc',contract:'#00d4ff',ma:'#ff4060',partner:'#00b8d9',sec:'#ffcc00'};
 
-// ── WATCHLIST ────────────────────────────────────
-const WATCHLIST_KEY = 'sb_watchlist_v2';
-function loadWatchlist() {
-  try { return new Set(JSON.parse(localStorage.getItem(WATCHLIST_KEY) || '[]')); }
-  catch(e) { return new Set(); }
-}
-function saveWatchlist() {
-  localStorage.setItem(WATCHLIST_KEY, JSON.stringify([...STATE.watchlist]));
-  updateWatchlistBadge();
-}
-function toggleWatchlist(ticker, e) {
-  if (e) e.stopPropagation();
-  if (STATE.watchlist.has(ticker)) STATE.watchlist.delete(ticker);
-  else STATE.watchlist.add(ticker);
-  saveWatchlist();
-  document.querySelectorAll(`.card-pin[data-ticker="${ticker}"]`).forEach(el => {
-    el.classList.toggle('pinned', STATE.watchlist.has(ticker));
-    el.textContent = STATE.watchlist.has(ticker) ? '⭐' : '☆';
-  });
-  document.querySelectorAll(`#card-${ticker}, #wl-card-${ticker}`).forEach(el => {
-    el.classList.toggle('pinned', STATE.watchlist.has(ticker));
-  });
-  if (STATE.currentPage === 'watchlist') renderWatchlist();
-}
-function updateWatchlistBadge() {
-  const badge = document.getElementById('watchlist-badge');
-  const count = STATE.watchlist.size;
-  badge.textContent = count;
-  badge.classList.toggle('show', count > 0);
+// ─── MARKET PULSE ────────────────────────────────
+const PULSE_TICKERS = [
+  { sym:'SPY',  poly:'SPY',       name:'S&P 500 ETF'         },
+  { sym:'QQQ',  poly:'QQQ',       name:'NASDAQ ETF'           },
+  { sym:'IWM',  poly:'IWM',       name:'Small Cap ETF'        },
+  { sym:'VIX',  poly:'I:VIX',     name:'Volatility Index'     },
+  { sym:'XBI',  poly:'XBI',       name:'Biotech ETF'          },
+  { sym:'BTC',  poly:'X:BTCUSD',  name:'Bitcoin'              },
+];
+
+async function fetchPulse() {
+  document.getElementById('pulse-updated').textContent = 'Updating...';
+  const apiKey = null; // pulled server-side via proxy
+  // Use our backend as proxy to avoid exposing key client-side
+  try {
+    const results = await Promise.allSettled(
+      PULSE_TICKERS.map(t => fetchPulseTicker(t))
+    );
+    results.forEach((r, i) => {
+      if (r.status === 'fulfilled' && r.value) renderPulseTile(PULSE_TICKERS[i].sym, r.value);
+    });
+    const now = new Date();
+    const ts = now.toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+    document.getElementById('pulse-updated').textContent = 'Updated ' + ts + ' ET — tap to refresh';
+    document.getElementById('pulse-updated').onclick = fetchPulse;
+  } catch(e) {
+    document.getElementById('pulse-updated').textContent = 'Update failed — tap to retry';
+    document.getElementById('pulse-updated').onclick = fetchPulse;
+  }
 }
 
-const STATE = {
-  stocks:[], filtered:[], mode:'premarket', expanded:new Set(),
-  isLive:false, refreshInterval:8000, refreshTimer:null,
-  currentPage:'scanner',
-  watchlist: loadWatchlist(),
-  newsWindowHours: 24, // catalyst chip only shows if news within this window
-  filters:{priceMin:0.5,priceMax:25,dollarVolMin:0,floatRotMin:0,gapMin:5,floatMax:50000000,catalyst:false,excludeEtf:true},
-  presets:{
-    ignition: {priceMin:1,  priceMax:20,dollarVolMin:500000,floatRotMin:15,gapMin:10,floatMax:10000000},
-    premarket:{priceMin:0.5,priceMax:25,dollarVolMin:150000,floatRotMin:5, gapMin:5, floatMax:50000000},
-    midday:   {priceMin:2,  priceMax:25,dollarVolMin:250000,floatRotMin:0, gapMin:3, floatMax:100000000},
-  },
-  renderedTickers: [],
-};
-
-// ── NEWS WINDOW ──────────────────────────────────
-function setNewsWindow(hours, btn) {
-  STATE.newsWindowHours = hours;
-  document.querySelectorAll('.nw-pill').forEach(p => p.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  // Re-render cards so catalyst chips update immediately
-  patchCards();
-}
-
-function isNewsRecent(publishedAt) {
-  if (STATE.newsWindowHours === 0) return true; // "Always" mode
-  if (!publishedAt) return false;
-  const ms = Date.now() - new Date(publishedAt).getTime();
-  return ms <= STATE.newsWindowHours * 60 * 60 * 1000;
-}
-
-// Returns catalyst only if there's a matching article within the news window
-function getEffectiveCatalyst(s) {
-  const news = s.news || [];
-  for (const article of news) {
-    if (isNewsRecent(article.publishedAt) && article.catalyst) {
-      return article.catalyst;
+async function fetchPulseTicker(t) {
+  // Route through Polygon snapshot endpoint via our backend key
+  const url = `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers/${encodeURIComponent(t.poly)}?apiKey=${STATE.polygonKey||''}`;
+  // For crypto/indices we use different endpoints — fall back gracefully
+  let price = null, prevClose = null, chgPct = null;
+  try {
+    // Try stocks snapshot first (works for SPY, QQQ, IWM, XBI)
+    const res = await fetch(`${BACKEND}/api/pulse?ticker=${encodeURIComponent(t.poly)}`);
+    if (res.ok) {
+      const d = await res.json();
+      price    = d.price;
+      prevClose= d.prevClose;
+      chgPct   = d.chgPct;
     }
+  } catch(e) {}
+  return price !== null ? { price, prevClose, chgPct } : null;
+}
+
+function renderPulseTile(sym, d) {
+  const tile = document.getElementById('pt-' + sym);
+  if (!tile) return;
+  const isUp   = d.chgPct >= 0;
+  const isVix  = sym === 'VIX';
+  // VIX is inverse — high VIX = bad for momentum
+  const tileUp = isVix ? !isUp : isUp;
+  tile.className = 'pulse-tile ' + (tileUp ? 'up' : 'down') + (isVix && d.price >= 20 ? ' warn' : '');
+  tile.querySelector('.pt-price').textContent = sym === 'BTC'
+    ? '$' + Math.round(d.price).toLocaleString()
+    : '$' + (d.price||0).toFixed(2);
+  tile.querySelector('.pt-price').classList.remove('pt-loading');
+  const chgEl = tile.querySelector('.pt-chg');
+  const arrow = isUp ? '▲' : '▼';
+  chgEl.textContent = arrow + ' ' + Math.abs(d.chgPct||0).toFixed(2) + '%';
+  chgEl.className = 'pt-chg ' + (isVix ? (isUp ? 'warn' : 'pos') : (isUp ? 'pos' : 'neg'));
+  // VIX warning banner
+  if (isVix) {
+    const warn = document.getElementById('vix-warn');
+    if (d.price >= 25) warn.classList.add('show');
+    else warn.classList.remove('show');
   }
-  // Fall back to stock-level catalyst if it has no publishedAt to check
-  // (keeps backwards compat with old enrichment format)
-  if (s.catalyst && !news.length) return s.catalyst;
-  return null;
 }
 
-// ─── PAGE SWITCHING ──────────────────────────────
-function showPage(page) {
-  STATE.currentPage = page;
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('nav-' + page)?.classList.add('active');
-  document.getElementById('page-scanner').style.display = 'none';
-  document.getElementById('page-watchlist').style.display = 'none';
-  document.getElementById('page-sizer').style.display = 'none';
-  document.body.classList.remove('sizer-active','watchlist-active');
-  if (page === 'sizer') {
-    document.body.classList.add('sizer-active');
-    document.getElementById('page-sizer').style.display = 'block';
-  } else if (page === 'watchlist') {
-    document.body.classList.add('watchlist-active');
-    document.getElementById('page-watchlist').style.display = 'block';
-    renderWatchlist();
-  } else {
-    document.getElementById('page-scanner').style.display = 'block';
-    if (page === 'scanner') manualRefresh();
-  }
-}
-
-// ─── FORMAT HELPERS ──────────────────────────────
-function fmt(n){
-  if(!n&&n!==0)return'—';
-  if(n>=1e9)return(n/1e9).toFixed(1)+'B';
-  if(n>=1e6)return(n/1e6).toFixed(1)+'M';
-  if(n>=1e3)return(n/1e3).toFixed(0)+'K';
-  return String(n);
-}
-function fmtDollar(n,d=2){return'$'+n.toFixed(d)}
-
-// ─── SCANNER FILTERS ─────────────────────────────
-function applyFilters(){
-  const f=STATE.filters;
-  STATE.filtered=STATE.stocks.filter(s=>{
-    if(!s.price||s.price<f.priceMin||s.price>f.priceMax)return false;
-    if(f.dollarVolMin>0&&s.dollarVolume>0&&s.dollarVolume<f.dollarVolMin)return false;
-    if(f.floatRotMin>0&&s.floatRotation!==null&&s.floatRotation!==undefined&&s.floatRotation<f.floatRotMin)return false;
-    if(s.gapPct>0&&s.gapPct<f.gapMin)return false;
-    if(s.float&&s.float>f.floatMax)return false;
-    if(f.catalyst&&!getEffectiveCatalyst(s))return false;
-    return true;
-  });
-  // Sort by gap tier desc, then gap % desc
-  STATE.filtered.sort((a,b)=>{
-    const ta=a.gapTier||0,tb=b.gapTier||0;
-    if(tb!==ta)return tb-ta;
-    return b.gapPct-a.gapPct;
-  });
-  document.getElementById('stat-matches').textContent=STATE.filtered.length;
-  const top=STATE.filtered[0];
-  document.getElementById('stat-topgap').textContent=top?top.ticker+' +'+top.gapPct.toFixed(1)+'%':'—';
-  patchCards();
-}
-
-// ─── SMOOTH CARD PATCHING ────────────────────────
-function patchCards(){
-  const list=document.getElementById('stock-list');
-  const empty=document.getElementById('empty-state');
-  if(!STATE.filtered.length){
-    list.innerHTML='';
-    STATE.renderedTickers=[];
-    empty.style.display='flex';
-    return;
-  }
-  empty.style.display='none';
-  const newTickers = STATE.filtered.map(s=>s.ticker);
-  const oldTickers = STATE.renderedTickers;
-  oldTickers.forEach(t => {
-    if (!newTickers.includes(t)) {
-      const el = document.getElementById('card-'+t);
-      if (el) el.remove();
-    }
-  });
-  newTickers.forEach((ticker, i) => {
-    const s = STATE.filtered[i];
-    const existing = document.getElementById('card-'+ticker);
-    if (!existing) {
-      const cardHtml = buildCardHtml(s, i, true);
-      const tmp = document.createElement('div');
-      tmp.innerHTML = cardHtml;
-      const newCard = tmp.firstChild;
-      const refCard = list.children[i];
-      if (refCard) list.insertBefore(newCard, refCard);
-      else list.appendChild(newCard);
-    } else {
-      patchCardData(existing, s);
-      const currentIndex = Array.from(list.children).indexOf(existing);
-      if (currentIndex !== i) {
-        const refCard = list.children[i];
-        if (refCard && refCard !== existing) list.insertBefore(existing, refCard);
-        else if (!refCard) list.appendChild(existing);
-      }
-    }
-  });
-  STATE.renderedTickers = newTickers;
-  const now=new Date();
-  const ts=now.toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
-  document.getElementById('last-updated').textContent='Last updated '+ts+' ET';
-  document.getElementById('stat-updated').textContent=ts;
-}
-
-function patchCardData(cardEl, s) {
-  const priceEl = cardEl.querySelector('.card-price');
-  if (priceEl) priceEl.textContent = '$'+(s.price?s.price.toFixed(2):'—');
-  const chgEl = cardEl.querySelector('.card-chg');
-  if (chgEl) {
-    chgEl.textContent = ((s.change||0)>=0?'▲':'▼')+' '+Math.abs(s.change||0).toFixed(1)+'%';
-    chgEl.className = 'card-chg '+((s.change||0)>=0?'pos':'neg');
-  }
-  const gapEl = cardEl.querySelector('.card-gap');
-  if (gapEl) {
-    gapEl.textContent = '+'+(s.gapPct||0).toFixed(1)+'%';
-    gapEl.className = 'card-gap '+((s.gapPct||0)<0?'neg':'');
-  }
-  const stats = cardEl.querySelectorAll('.card-stat span');
-  if (stats[0]) stats[0].textContent = s.dollarVolume>0?fmt(s.dollarVolume):'—';
-  if (stats[1]) {
-    stats[1].textContent = (s.floatRotation!==null&&s.floatRotation!==undefined)?s.floatRotation.toFixed(1)+'%':'—';
-    stats[1].className = s.floatRotation>=25?'hig':s.floatRotation>=10?'hi':'';
-  }
-  // Catalyst chip uses news window
-  const catRow = cardEl.querySelector('.card-cat-row');
-  if (catRow) {
-    const cat = getEffectiveCatalyst(s);
-    catRow.innerHTML = cat
-      ? `<span class="catalyst-chip ${cat.class}">${cat.label}</span>`
-      : `<span class="catalyst-chip no-catalyst">No Catalyst</span>`;
-  }
-  const sizeBtn = cardEl.querySelector('.card-sizeit');
-  if (sizeBtn) sizeBtn.setAttribute('onclick', `event.stopPropagation();openSizerWithPrice(${s.price})`);
-}
-
-function buildCardHtml(s, i, isNew=false) {
-  const floatM=s.float?s.float/1e6:null;
-  const isUltra=floatM&&floatM<10,isLow=floatM&&floatM<20;
-  const tickCls=isUltra?'ultra-float':isLow?'low-float':'';
-  const floatTag=isUltra?'<div class="card-float-tag uf">★ ULTRA LOW FLOAT</div>':isLow?'<div class="card-float-tag lf">LOW FLOAT</div>':floatM?'<div class="card-float-tag">'+floatM.toFixed(1)+'M float</div>':'';
-  const frotCls=s.floatRotation>=25?'hig':s.floatRotation>=10?'hi':'';
-  const gapTierCls=s.gapTier>=3?'tier3':s.gapTier>=2?'tier2':'';
-  const isOpen=STATE.expanded.has(s.ticker);
-  const isPmh=s.abovePmh||s.breakingPmh;
-  const isPinned=STATE.watchlist.has(s.ticker);
-  const cat=getEffectiveCatalyst(s);
-  const catChip=cat?`<span class="catalyst-chip ${cat.class}">${cat.label}</span>`:`<span class="catalyst-chip no-catalyst">No Catalyst</span>`;
-  const newsHtml=buildNewsHtml(s);
-  const detail=`
-    <div class="card-detail ${isOpen?'open':''}" id="detail-${s.ticker}">
-      <div class="detail-grid">
-        <div class="dg-item"><div class="dg-label">Prev Close</div><div class="dg-val">$${s.prevClose||'—'}</div></div>
-        <div class="dg-item"><div class="dg-label">Gap %</div><div class="dg-val green">+${s.gapPct}%</div></div>
-        <div class="dg-item"><div class="dg-label">$ Volume</div><div class="dg-val accent">${fmt(s.dollarVolume)}</div></div>
-        <div class="dg-item"><div class="dg-label">Float Rotation</div><div class="dg-val ${s.floatRotation>=25?'gold':s.floatRotation>=10?'green':''}">${ s.floatRotation!==null&&s.floatRotation!==undefined?s.floatRotation.toFixed(1)+'%':'N/A'}</div></div>
-        <div class="dg-item"><div class="dg-label">Shares Vol</div><div class="dg-val">${fmt(s.volume)}</div></div>
-        <div class="dg-item"><div class="dg-label">RVOL (ref)</div><div class="dg-val">${s.rvol}×</div></div>
-        <div class="dg-item"><div class="dg-label">PM High</div><div class="dg-val ${isPmh?'gold':''}">$${s.pmHigh||'—'}</div></div>
-        <div class="dg-item"><div class="dg-label">PM Low</div><div class="dg-val">$${s.pmLow||'—'}</div></div>
-        ${floatM?'<div class="dg-item"><div class="dg-label">Float</div><div class="dg-val">'+floatM.toFixed(1)+'M</div></div>':''}
-        ${s.mktCap?'<div class="dg-item"><div class="dg-label">Mkt Cap</div><div class="dg-val">$'+fmt(s.mktCap)+'</div></div>':''}
-      </div>
-      <div class="news-section">
-        <div class="news-section-label">News Catalyst</div>
-        ${newsHtml}
-      </div>
-      <div class="action-row">
-        <a class="act-btn google-btn" href="https://www.google.com/search?q=%22${encodeURIComponent(s.ticker+' News')}%22" target="_blank" onclick="event.stopPropagation()">🔍 Google It</a>
-        <a class="act-btn" href="https://finance.yahoo.com/quote/${s.ticker}" target="_blank" onclick="event.stopPropagation()">📈 Yahoo</a>
-        <a class="act-btn" href="https://robinhood.com/stocks/${s.ticker}" target="_blank" onclick="event.stopPropagation()">📊 RH</a>
-      </div>
-    </div>`;
-
-  return `<div class="stock-card ${isPmh?'pmh-active':''} ${isPinned?'pinned':''} ${isNew?'card-new':''}" id="card-${s.ticker}" onclick="toggleCard('${s.ticker}')" style="${isNew?'animation-delay:'+i*0.04+'s':''}">
-    <div class="card-main">
-      <div class="card-ticker-col"><div class="card-ticker ${tickCls}">${s.ticker}</div>${floatTag}</div>
-      <div class="card-middle">
-        <div class="card-price-row">
-          <div class="card-price">$${s.price?s.price.toFixed(2):'—'}</div>
-          <div class="card-chg ${(s.change||0)>=0?'pos':'neg'}">${(s.change||0)>=0?'▲':'▼'} ${Math.abs(s.change||0).toFixed(1)}%</div>
-          <div class="card-sizeit" onclick="event.stopPropagation();openSizerWithPrice(${s.price})">🧮 Size It</div>
-        </div>
-        <div class="card-stats-row">
-          <div class="card-stat">$VOL <span>${s.dollarVolume>0?fmt(s.dollarVolume):'—'}</span></div>
-          <div class="card-stat">FROT <span class="${frotCls}">${s.floatRotation!==null&&s.floatRotation!==undefined?s.floatRotation.toFixed(1)+'%':'—'}</span></div>
-        </div>
-        <div class="card-cat-row">${catChip}</div>
-      </div>
-      <div class="card-right">
-        <div class="card-gap ${(s.gapPct||0)<0?'neg':gapTierCls}">+${(s.gapPct||0).toFixed(1)}%</div>
-        ${isPmh?'<div class="pmh-tag">⚡ PMH</div>':''}
-        <div class="card-pin ${isPinned?'pinned':''}" data-ticker="${s.ticker}" onclick="toggleWatchlist('${s.ticker}',event)">${isPinned?'⭐':'☆'}</div>
-      </div>
-    </div>
-    ${detail}
-  </div>`;
-}
-
-function buildNewsHtml(s){
-  const news=s.news||[];
-  if(!news.length){
-    return`<div class="no-news">No news via API. Search directly:<br/><br/>
-      <a href="https://news.google.com/search?q=${encodeURIComponent(s.ticker+' stock')}" target="_blank">🔍 Google News</a>
-      &nbsp;&nbsp;<a href="https://www.benzinga.com/stock/${s.ticker.toLowerCase()}" target="_blank">📰 Benzinga</a>
-    </div>`;
-  }
-  return news.slice(0,3).map(n=>{
-    const catColor=n.catalyst?(CAT_COLORS[n.catalyst.type]||'#6a90b0'):'#6a90b0';
-    const isRecent=isNewsRecent(n.publishedAt);
-    const url=n.url&&n.url!=='#'?n.url:'https://news.google.com/search?q='+encodeURIComponent((s.ticker||'')+' '+(n.headline||''));
-    return`<a class="news-card" href="${url}" target="_blank" onclick="event.stopPropagation()" style="${isRecent?'':'opacity:0.5'}">
-      <div class="news-card-top"><div class="news-cat-dot" style="background:${catColor}"></div><div class="news-headline">${n.headline||'View article'}${!isRecent?' <span style="color:var(--dim);font-size:9px">(older)</span>':''}</div></div>
-      <div class="news-meta"><span class="news-source">${n.source||'News'}</span><span class="news-time">${n.timeAgo||''}</span></div>
-      <div class="news-link-row">🔗 Tap to read full article</div>
-    </a>`;
-  }).join('');
-}
-
-// ─── WATCHLIST RENDER ────────────────────────────
-function renderWatchlist() {
-  const list = document.getElementById('watchlist-list');
-  const empty = document.getElementById('watchlist-empty');
-  if (!STATE.watchlist.size) { list.innerHTML = ''; empty.style.display = 'flex'; return; }
-  empty.style.display = 'none';
-  const pinned = [...STATE.watchlist].map(ticker => {
-    return STATE.stocks.find(s => s.ticker === ticker) || { ticker, price:null, change:0, gapPct:0, volume:0, rvol:0, news:[], catalyst:null, _stale:true };
-  });
-  list.innerHTML = pinned.map((s, i) => {
-    if (s._stale) {
-      return `<div class="stock-card pinned" id="wl-card-${s.ticker}">
-        <div class="card-main">
-          <div class="card-ticker-col"><div class="card-ticker">${s.ticker}</div><div class="card-float-tag" style="color:var(--dim)">not in scan</div></div>
-          <div class="card-middle"><div class="card-price-row"><div class="card-price" style="color:var(--dim)">—</div></div></div>
-          <div class="card-right"><div class="card-pin pinned" data-ticker="${s.ticker}" onclick="toggleWatchlist('${s.ticker}',event)">⭐</div></div>
-        </div>
-      </div>`;
-    }
-    return buildCardHtml(s, i, false).replace('id="card-', 'id="wl-card-');
-  }).join('');
-}
 
 function toggleCard(ticker){
   if(STATE.expanded.has(ticker))STATE.expanded.delete(ticker);
@@ -1000,7 +773,6 @@ async function fetchLiveData(){
       if(Array.isArray(data)&&data.length>0){
         if(data[0].ticker&&data[0].ticker.startsWith('DEMO')){setScanningState('idle');return;}
         STATE.stocks=data;STATE.isLive=true;updateConnStatus(true);applyFilters();
-        if(STATE.currentPage==='watchlist') renderWatchlist();
       } else if(Array.isArray(data)&&data.length===0){
         STATE.isLive=true;updateConnStatus(true);applyFilters();
       }
@@ -1026,7 +798,7 @@ function connectWS(){
         if(msg.type==='scan_results'&&Array.isArray(msg.data)&&msg.data.length>0){
           if(msg.data[0].ticker&&msg.data[0].ticker.startsWith('DEMO'))return;
           STATE.stocks=msg.data;STATE.isLive=true;applyFilters();
-          if(STATE.currentPage==='watchlist') renderWatchlist();
+  
         }
       }catch(err){}
     };
