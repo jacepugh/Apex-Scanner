@@ -1241,7 +1241,6 @@ function init(){
   updateClock();
   setInterval(updateClock,1000);
   ['dvol','frot','gap','float'].forEach(updateSliderDisplay);
-  updateWatchlistBadge();
   document.getElementById('sz-account').value = sizerAccount;
   document.getElementById('sz-account-display').textContent = '$' + sizerAccount.toLocaleString('en-US',{maximumFractionDigits:0});
   const savedRiskLabel = (sizerRiskPct * 100).toString().replace(/\.0$/,'') + '%';
