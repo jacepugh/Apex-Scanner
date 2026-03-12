@@ -632,6 +632,36 @@ const BACKEND    = 'https://apex-scanner-production.up.railway.app';
 const WS_BACKEND = 'wss://apex-scanner-production.up.railway.app';
 const CAT_COLORS = {fda:'#00e676',earnings:'#c084fc',contract:'#00d4ff',ma:'#ff4060',partner:'#00b8d9',sec:'#ffcc00'};
 
+// ─── STATE ───────────────────────────────────────
+const STATE = {
+  stocks:      [],
+  filtered:    [],
+  expanded:    new Set(),
+  currentPage: 'scanner',
+  isLive:      false,
+  refreshRate: 8000,
+  refreshInterval: null,
+  renderedTickers: [],
+  newsWindowHours: 24,
+  pulseData:   {},
+  polygonKey:  '',
+  filters: {
+    priceMin:     0.5,
+    priceMax:     25,
+    dollarVolMin: 0,
+    floatRotMin:  0,
+    gapMin:       5,
+    floatMax:     50000000,
+    catalyst:     false,
+    excludeEtf:   true,
+  },
+  presets: {
+    ignition:  {priceMin:1,   priceMax:20, dollarVolMin:500000, floatRotMin:15, gapMin:10, floatMax:10000000},
+    premarket: {priceMin:0.5, priceMax:25, dollarVolMin:150000, floatRotMin:5,  gapMin:5,  floatMax:50000000},
+    midday:    {priceMin:2,   priceMax:25, dollarVolMin:250000, floatRotMin:0,  gapMin:3,  floatMax:100000000},
+  },
+};
+
 // ─── MARKET PULSE ────────────────────────────────
 const PULSE_TICKERS = [
   { sym:'SPY',  poly:'SPY',       name:'S&P 500 ETF'         },
