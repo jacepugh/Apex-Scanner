@@ -674,19 +674,23 @@ const PULSE_TICKERS = [
 
 async function fetchPulse() {
   document.getElementById('pulse-updated').textContent = 'Updating...';
-  // Fetch each ticker individually — don't let one failure kill the rest
-  for (let i = 0; i < PULSE_TICKERS.length; i++) {
-    const t = PULSE_TICKERS[i];
-    try {
-      const d = await fetchPulseTicker(t);
-      if (d) renderPulseTile(t.sym, d);
-    } catch(e) {
-      console.log('[Pulse] render failed for', t.sym, e.message);
-    }
+  try {
+    const res = await fetch(`${BACKEND}/api/pulse/all`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const all = await res.json();
+    // all = { SPY: {price, prevClose, chgPct}, QQQ: {...}, ... }
+    PULSE_TICKERS.forEach(t => {
+      const d = all[t.sym];
+      if (d && typeof d.price !== 'undefined') {
+        try { renderPulseTile(t.sym, d); } catch(e) {}
+      }
+    });
+    const now = new Date();
+    const ts = now.toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+    document.getElementById('pulse-updated').textContent = 'Updated ' + ts + ' ET — tap to refresh';
+  } catch(e) {
+    document.getElementById('pulse-updated').textContent = 'Update failed — tap to retry';
   }
-  const now = new Date();
-  const ts = now.toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
-  document.getElementById('pulse-updated').textContent = 'Updated ' + ts + ' ET — tap to refresh';
   document.getElementById('pulse-updated').onclick = fetchPulse;
 }
 
