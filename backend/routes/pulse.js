@@ -54,32 +54,30 @@ function parsePulseResponse(poly, data) {
   }
 
   // ── Stocks / ETFs ──
-  const t        = data.ticker || {};
-  const day      = t.day     || {};
-  const prev     = t.prevDay || {};
-  const prevClose = prev.c   || 0;
+  // Actual Polygon after-hours snapshot structure (confirmed from debug):
+  // t.day.c        = regular session close (most current price available)
+  // t.prevDay.c    = previous day close (baseline for % change)
+  // t.todaysChangePerc = pre-calculated % change from Polygon
+  // lastTrade / lastQuote are absent after hours on Starter plan
+  const t         = data.ticker || {};
+  const day       = t.day     || {};
+  const prev      = t.prevDay || {};
+  const prevClose = prev.c    || 0;
 
-  // Pick the most current price based on session
-  let price = 0;
-  if (session === 'premarket' || session === 'afterhours') {
-    // Extended hours: last trade is most current, fall back to mid-quote, then day close
-    const lastTrade = t.lastTrade?.p || 0;
-    const askPrice  = t.lastQuote?.P || 0;
-    const bidPrice  = t.lastQuote?.p || 0;
-    const midQuote  = askPrice > 0 && bidPrice > 0 ? (askPrice + bidPrice) / 2 : 0;
-    price = lastTrade || midQuote || askPrice || day.c || prevClose;
-  } else if (session === 'regular') {
-    price = day.c || t.lastTrade?.p || prevClose;
-  } else {
-    // Closed — use last available close
-    price = day.c || t.lastTrade?.p || prevClose;
-  }
+  // Best available price — lastTrade if present (pre-market), else day close
+  const lastTradePrice = t.lastTrade?.p || 0;
+  const askPrice       = t.lastQuote?.P || 0;
+  const bidPrice       = t.lastQuote?.p || 0;
+  const midQuote       = askPrice > 0 && bidPrice > 0 ? (askPrice + bidPrice) / 2 : 0;
+
+  const price = lastTradePrice || midQuote || askPrice || day.c || prevClose;
 
   if (!price || price <= 0) return null;
 
-  const chgPct = prevClose > 0
-    ? ((price - prevClose) / prevClose) * 100
-    : (t.todaysChangePerc || 0);
+  // Use Polygon's pre-calculated change % when available — most accurate
+  const chgPct = t.todaysChangePerc !== undefined && t.todaysChangePerc !== null
+    ? t.todaysChangePerc
+    : prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : 0;
 
   return {
     price:     parseFloat(price.toFixed(2)),
