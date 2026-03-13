@@ -92,6 +92,21 @@ function parsePulseResponse(poly, data) {
 // In-memory cache
 const pulseCache = new Map();
 
+// GET /api/pulse/debug?ticker=SPY — returns raw Polygon response for diagnosis
+router.get('/debug', async (req, res) => {
+  const poly   = req.query.ticker || 'SPY';
+  const apiKey = process.env.POLYGON_API_KEY || '';
+  if (!apiKey) return res.status(500).json({ error: 'no api key' });
+  try {
+    const url      = getPolygonUrl(poly, apiKey);
+    const response = await axios.get(url, { timeout: 8000 });
+    // Return raw response so we can see exact field structure
+    res.json({ poly, url: url.replace(apiKey, 'REDACTED'), raw: response.data });
+  } catch (err) {
+    res.status(500).json({ error: err.message, status: err.response?.status });
+  }
+});
+
 // GET /api/pulse?ticker=SPY
 router.get('/', async (req, res) => {
   const poly   = req.query.ticker;
