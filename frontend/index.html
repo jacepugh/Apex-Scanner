@@ -1260,6 +1260,15 @@ function init(){
   fetchLiveData();
   connectWS();
   STATE.refreshTimer=setInterval(fetchLiveData,STATE.refreshRate);
+  // TEST: force render SPY tile with known good data to verify renderPulseTile works
+  setTimeout(()=>{
+    try {
+      renderPulseTile('SPY', {price:666.06, prevClose:664.00, chgPct:0.36});
+      console.warn('[PulseTest] renderPulseTile fired OK');
+    } catch(e) {
+      console.warn('[PulseTest] renderPulseTile FAILED:', e.message);
+    }
+  }, 2000);
 }
 
 init();
