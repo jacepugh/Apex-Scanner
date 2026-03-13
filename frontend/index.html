@@ -352,14 +352,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 <body>
 <div id="errbanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#ff4060;color:#fff;font-family:monospace;font-size:11px;padding:8px 12px;white-space:pre-wrap;word-break:break-all;max-height:40vh;overflow-y:auto"></div>
 <script>
-// Mirror console.warn to error banner for mobile debugging
-const _origWarn = console.warn;
-console.warn = function(...args) {
-  _origWarn.apply(console, args);
-  const banner = document.getElementById('err-banner');
-  if (banner) { banner.textContent = args.join(' '); banner.style.display='block'; }
-};
-
 window.onerror = function(msg, src, line, col, err) {
   var b = document.getElementById('errbanner');
   b.style.display = 'block';
@@ -682,36 +674,26 @@ const PULSE_TICKERS = [
 
 async function fetchPulse() {
   document.getElementById('pulse-updated').textContent = 'Updating...';
-  const apiKey = null; // pulled server-side via proxy
-  // Use our backend as proxy to avoid exposing key client-side
-  try {
-    const results = await Promise.allSettled(
-      PULSE_TICKERS.map(t => fetchPulseTicker(t))
-    );
-    results.forEach((r, i) => {
-      if (r.status === 'fulfilled' && r.value) renderPulseTile(PULSE_TICKERS[i].sym, r.value);
-    });
-    const now = new Date();
-    const ts = now.toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
-    document.getElementById('pulse-updated').textContent = 'Updated ' + ts + ' ET — tap to refresh';
-    document.getElementById('pulse-updated').onclick = fetchPulse;
-  } catch(e) {
-    document.getElementById('pulse-updated').textContent = 'Update failed — tap to retry';
-    document.getElementById('pulse-updated').onclick = fetchPulse;
+  // Fetch each ticker individually — don't let one failure kill the rest
+  for (let i = 0; i < PULSE_TICKERS.length; i++) {
+    const t = PULSE_TICKERS[i];
+    const d = await fetchPulseTicker(t);
+    if (d) renderPulseTile(t.sym, d);
   }
+  const now = new Date();
+  const ts = now.toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+  document.getElementById('pulse-updated').textContent = 'Updated ' + ts + ' ET — tap to refresh';
+  document.getElementById('pulse-updated').onclick = fetchPulse;
 }
 
 async function fetchPulseTicker(t) {
   try {
     const res = await fetch(`${BACKEND}/api/pulse?ticker=${encodeURIComponent(t.poly)}`);
-    if (!res.ok) { console.warn('[Pulse] HTTP', res.status, t.poly); return null; }
+    if (!res.ok) return null;
     const d = await res.json();
-    console.log('[Pulse] raw response for', t.poly, JSON.stringify(d));
-    if (!d || d.error) { console.warn('[Pulse] error field', t.poly, d?.error); return null; }
-    if (typeof d.price === 'undefined') { console.warn('[Pulse] no price field', t.poly); return null; }
+    if (!d || d.error || typeof d.price === 'undefined') return null;
     return { price: d.price, prevClose: d.prevClose, chgPct: d.chgPct };
   } catch(e) {
-    console.warn('[Pulse] fetch failed for', t.poly, e.message);
     return null;
   }
 }
@@ -1260,15 +1242,7 @@ function init(){
   fetchLiveData();
   connectWS();
   STATE.refreshTimer=setInterval(fetchLiveData,STATE.refreshRate);
-  // TEST: force render SPY tile with known good data to verify renderPulseTile works
-  setTimeout(()=>{
-    try {
-      renderPulseTile('SPY', {price:666.06, prevClose:664.00, chgPct:0.36});
-      console.warn('[PulseTest] renderPulseTile fired OK');
-    } catch(e) {
-      console.warn('[PulseTest] renderPulseTile FAILED:', e.message);
-    }
-  }, 2000);
+
 }
 
 init();
