@@ -74,7 +74,10 @@ class ScannerService {
     const withAlerts = this.detectAlerts(stocks);
     this.cache.set('last_scan', withAlerts, 60);
 
-    if (!usedDemo) this.enrichNewsBackground(withAlerts);
+    if (!usedDemo) {
+      this.enrichNewsBackground(withAlerts);
+      this.enrichFloatsBackground(withAlerts); // runs in background, updates float + floatRotation
+    }
 
     return withAlerts;
   }
@@ -187,19 +190,15 @@ class ScannerService {
     const dayOpen        = day.o || 0;
 
     // Price by session
-    // prevDay.c is last resort — always available, ensures tickers aren't dropped
-    // purely because they haven't traded yet in pre-market
-    const prevDayClose = prev.c || 0;
     let price = 0;
     if (session === 'premarket' || session === 'afterhours') {
       price = lastTradePrice
            || (lastQuoteAsk > 0 && lastQuoteBid > 0 ? (lastQuoteAsk + lastQuoteBid) / 2 : 0)
            || lastQuoteAsk
            || dayClose
-           || dayOpen
-           || prevDayClose;  // final fallback — prev close is always populated
+           || dayOpen;
     } else {
-      price = dayClose || lastTradePrice || dayOpen || lastQuoteAsk || prevDayClose;
+      price = dayClose || lastTradePrice || dayOpen || lastQuoteAsk;
     }
 
     if (!price || price <= 0) return null;
@@ -277,6 +276,42 @@ class ScannerService {
       news:          [],
       catalyst:      null,
     };
+  }
+
+  // ─── FLOAT ENRICHMENT ────────────────────────
+  async enrichFloatsBackground(stocks) {
+    const needFloat = stocks.filter(s => !s.float);
+    if (!needFloat.length) return;
+    console.log('[Scanner] Float enrichment: fetching', needFloat.length, 'tickers');
+    for (const stock of needFloat) {
+      try {
+        const cacheKey = 'float_' + stock.ticker;
+        const cached   = this.cache.get(cacheKey);
+        if (cached !== undefined) {
+          stock.float = cached;
+        } else {
+          const res = await axios.get(
+            `https://api.polygon.io/v3/reference/tickers/${stock.ticker}`,
+            { params: { apiKey: this.apiKey }, timeout: 8000 }
+          );
+          const details = res.data?.results || {};
+          const float   = details.share_class_shares_outstanding
+                       || details.weighted_shares_outstanding
+                       || null;
+          // Cache for 24 hours — floats don't change often
+          this.cache.set(cacheKey, float, 86400);
+          stock.float = float;
+        }
+        // Recalculate float rotation now that we have float
+        if (stock.float && stock.float > 0 && stock.volume > 0) {
+          stock.floatRotation = parseFloat(((stock.volume / stock.float) * 100).toFixed(2));
+        }
+      } catch(e) {
+        // leave float as null — no retry
+      }
+      await this.sleep(150); // stagger to avoid rate limiting
+    }
+    console.log('[Scanner] Float enrichment complete');
   }
 
   // ─── GAINERS FALLBACK ─────────────────────────
