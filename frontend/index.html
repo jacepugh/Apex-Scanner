@@ -677,8 +677,12 @@ async function fetchPulse() {
   // Fetch each ticker individually — don't let one failure kill the rest
   for (let i = 0; i < PULSE_TICKERS.length; i++) {
     const t = PULSE_TICKERS[i];
-    const d = await fetchPulseTicker(t);
-    if (d) renderPulseTile(t.sym, d);
+    try {
+      const d = await fetchPulseTicker(t);
+      if (d) renderPulseTile(t.sym, d);
+    } catch(e) {
+      console.log('[Pulse] render failed for', t.sym, e.message);
+    }
   }
   const now = new Date();
   const ts = now.toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
@@ -717,8 +721,10 @@ function renderPulseTile(sym, d) {
   // VIX warning banner
   if (isVix) {
     const warn = document.getElementById('vix-warn');
-    if (d.price >= 25) warn.classList.add('show');
-    else warn.classList.remove('show');
+    if (warn) {
+      if (d.price >= 25) warn.classList.add('show');
+      else warn.classList.remove('show');
+    }
   }
 }
 
