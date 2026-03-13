@@ -352,6 +352,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 <body>
 <div id="errbanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#ff4060;color:#fff;font-family:monospace;font-size:11px;padding:8px 12px;white-space:pre-wrap;word-break:break-all;max-height:40vh;overflow-y:auto"></div>
 <script>
+// Mirror console.warn to error banner for mobile debugging
+const _origWarn = console.warn;
+console.warn = function(...args) {
+  _origWarn.apply(console, args);
+  const banner = document.getElementById('err-banner');
+  if (banner) { banner.textContent = args.join(' '); banner.style.display='block'; }
+};
+
 window.onerror = function(msg, src, line, col, err) {
   var b = document.getElementById('errbanner');
   b.style.display = 'block';
@@ -696,10 +704,11 @@ async function fetchPulse() {
 async function fetchPulseTicker(t) {
   try {
     const res = await fetch(`${BACKEND}/api/pulse?ticker=${encodeURIComponent(t.poly)}`);
-    if (!res.ok) return null;
+    if (!res.ok) { console.warn('[Pulse] HTTP', res.status, t.poly); return null; }
     const d = await res.json();
-    // Validate we actually got a price back
-    if (!d || typeof d.price === 'undefined' || d.error) return null;
+    console.log('[Pulse] raw response for', t.poly, JSON.stringify(d));
+    if (!d || d.error) { console.warn('[Pulse] error field', t.poly, d?.error); return null; }
+    if (typeof d.price === 'undefined') { console.warn('[Pulse] no price field', t.poly); return null; }
     return { price: d.price, prevClose: d.prevClose, chgPct: d.chgPct };
   } catch(e) {
     console.warn('[Pulse] fetch failed for', t.poly, e.message);
