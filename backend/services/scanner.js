@@ -187,15 +187,19 @@ class ScannerService {
     const dayOpen        = day.o || 0;
 
     // Price by session
+    // prevDay.c is last resort — always available, ensures tickers aren't dropped
+    // purely because they haven't traded yet in pre-market
+    const prevDayClose = prev.c || 0;
     let price = 0;
     if (session === 'premarket' || session === 'afterhours') {
       price = lastTradePrice
            || (lastQuoteAsk > 0 && lastQuoteBid > 0 ? (lastQuoteAsk + lastQuoteBid) / 2 : 0)
            || lastQuoteAsk
            || dayClose
-           || dayOpen;
+           || dayOpen
+           || prevDayClose;  // final fallback — prev close is always populated
     } else {
-      price = dayClose || lastTradePrice || dayOpen || lastQuoteAsk;
+      price = dayClose || lastTradePrice || dayOpen || lastQuoteAsk || prevDayClose;
     }
 
     if (!price || price <= 0) return null;
