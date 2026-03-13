@@ -606,9 +606,9 @@ window.addEventListener('unhandledrejection', function(e) {
     <div class="settings-section">
       <div class="ds-label">Refresh Rate</div>
       <div class="rate-pills" id="rate-pills">
-        <div class="rate-pill active" onclick="setRefreshRate(8000)">8s</div>
+        <div class="rate-pill" onclick="setRefreshRate(8000)">8s</div>
         <div class="rate-pill" onclick="setRefreshRate(15000)">15s</div>
-        <div class="rate-pill" onclick="setRefreshRate(30000)">30s</div>
+        <div class="rate-pill active" onclick="setRefreshRate(30000)">30s</div>
         <div class="rate-pill" onclick="setRefreshRate(60000)">60s</div>
       </div>
     </div>
@@ -639,7 +639,7 @@ const STATE = {
   expanded:    new Set(),
   currentPage: 'scanner',
   isLive:      false,
-  refreshRate: 8000,
+  refreshRate: 30000,
   refreshInterval: null,
   renderedTickers: [],
   newsWindowHours: 24,
@@ -1157,6 +1157,7 @@ function setRefreshRate(ms){
   const labels={8000:'8s',15000:'15s',30000:'30s',60000:'60s'};
   document.querySelectorAll('.rate-pill').forEach(p=>{p.classList.toggle('active',p.textContent===labels[ms])});
   clearInterval(STATE.refreshTimer);
+  STATE.refreshRate=ms;
   STATE.refreshTimer=setInterval(fetchLiveData,ms);
 }
 
@@ -1253,7 +1254,7 @@ function init(){
   document.getElementById('page-scanner').style.display = 'block';
   fetchLiveData();
   connectWS();
-  STATE.refreshTimer=setInterval(fetchLiveData,STATE.refreshInterval);
+  STATE.refreshTimer=setInterval(fetchLiveData,STATE.refreshRate);
 }
 
 init();
