@@ -56,6 +56,11 @@ app.use('/api/news',    newsRoutes);
 app.use('/api/alerts',  alertRoutes);
 app.use('/api/pulse',   require('./routes/pulse'));
 
+// Serve cached pulse data — instant, no Polygon call needed
+app.get('/api/pulse/all', (req, res) => {
+  res.json(pulseStore);
+});
+
 app.get('/api/health', (req, res) => {
   res.json({
     status:     'ok',
@@ -127,13 +132,24 @@ const WIDE_FILTERS = {
 };
 
 // ─── SCAN SCHEDULER ──────────────────────────────────────────
+function getMarketSession() {
+  const now  = new Date();
+  const etH  = parseInt(now.toLocaleString('en-US', { timeZone: 'America/New_York', hour: '2-digit', hour12: false }));
+  const etM  = parseInt(now.toLocaleString('en-US', { timeZone: 'America/New_York', minute: '2-digit' }));
+  const mins = etH * 60 + etM;
+  if (mins >= 240 && mins < 570)  return 'premarket';
+  if (mins >= 570 && mins < 960)  return 'regular';
+  if (mins >= 960 && mins < 1200) return 'afterhours';
+  return 'closed';
+}
+
 let scanRunning = false;
 
 async function runScan() {
   if (scanRunning) return;
   scanRunning = true;
   try {
-    const session = scanner.getMarketSession();
+    const session = getMarketSession();
 
     // Skip scan during closed hours — store stays stale, frontend shows last results
     if (session === 'closed') {
@@ -194,6 +210,70 @@ function scheduleScan() {
   }, interval);
 }
 
+// ─── PULSE SCHEDULER ────────────────────────────────────────
+const PULSE_SYMBOLS = [
+  { sym: 'SPY',  poly: 'SPY'      },
+  { sym: 'QQQ',  poly: 'QQQ'      },
+  { sym: 'IWM',  poly: 'IWM'      },
+  { sym: 'VIX',  poly: 'I:VIX'   },
+  { sym: 'XBI',  poly: 'XBI'      },
+  { sym: 'BTC',  poly: 'X:BTCUSD' },
+];
+
+const pulseStore = {};  // sym -> { price, prevClose, chgPct, session, updatedAt }
+
+async function runPulseFetch() {
+  const apiKey = process.env.POLYGON_API_KEY || '';
+  if (!apiKey) return;
+  for (const { sym, poly } of PULSE_SYMBOLS) {
+    try {
+      let url;
+      if (poly.startsWith('X:'))
+        url = `https://api.polygon.io/v2/snapshot/locale/global/markets/crypto/tickers/${poly}?apiKey=${apiKey}`;
+      else if (poly.startsWith('I:'))
+        url = `https://api.polygon.io/v2/snapshot/locale/us/markets/indices/tickers/${poly}?apiKey=${apiKey}`;
+      else
+        url = `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers/${poly}?apiKey=${apiKey}`;
+
+      const res = await axios.get(url, { timeout: 8000 });
+      const t   = res.data?.ticker || {};
+      const day  = t.day     || {};
+      const prev = t.prevDay || {};
+
+      let price = t.lastTrade?.p || t.lastQuote?.P || day.c || prev.c || 0;
+      if (poly.startsWith('X:')) price = t.lastTrade?.p || day.c || prev.c || 0;
+      if (poly.startsWith('I:')) price = t.value || day.c || 0;
+
+      const prevClose = prev.c || 0;
+      const chgPct    = t.todaysChangePerc !== undefined
+        ? t.todaysChangePerc
+        : prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : 0;
+
+      if (price > 0) {
+        pulseStore[sym] = {
+          price:     parseFloat(price.toFixed(2)),
+          prevClose: parseFloat(prevClose.toFixed(2)),
+          chgPct:    parseFloat(chgPct.toFixed(2)),
+          updatedAt: Date.now(),
+        };
+      }
+    } catch(e) {
+      // keep stale value on error
+    }
+    await new Promise(r => setTimeout(r, 300)); // stagger requests
+  }
+  console.log('[Pulse] Updated:', Object.keys(pulseStore).join(', '));
+}
+
+let pulseTimer = null;
+function schedulePulse() {
+  if (pulseTimer) clearTimeout(pulseTimer);
+  pulseTimer = setTimeout(async () => {
+    await runPulseFetch();
+    schedulePulse();
+  }, 60000); // refresh every 60s
+}
+
 // ─── STARTUP ─────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, async () => {
@@ -205,6 +285,8 @@ server.listen(PORT, async () => {
 
   await runScan();
   scheduleScan();
+  await runPulseFetch();
+  schedulePulse();
 });
 
 process.on('SIGTERM', () => {
