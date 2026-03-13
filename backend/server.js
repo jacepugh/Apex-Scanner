@@ -55,12 +55,12 @@ app.locals.store   = store;
 app.use('/api/scanner', scannerRoutes);
 app.use('/api/news',    newsRoutes);
 app.use('/api/alerts',  alertRoutes);
-app.use('/api/pulse',   require('./routes/pulse'));
-
-// Serve cached pulse data — instant, no Polygon call needed
+// Serve cached pulse data — must be before app.use('/api/pulse') to avoid interception
 app.get('/api/pulse/all', (req, res) => {
   res.json(pulseStore);
 });
+
+app.use('/api/pulse', require('./routes/pulse'));
 
 app.get('/api/health', (req, res) => {
   res.json({
