@@ -241,14 +241,22 @@ async function runPulseFetch() {
       const day  = t.day     || {};
       const prev = t.prevDay || {};
 
-      let price = t.lastTrade?.p || t.lastQuote?.P || day.c || prev.c || 0;
-      if (poly.startsWith('X:')) price = t.lastTrade?.p || day.c || prev.c || 0;
-      if (poly.startsWith('I:')) price = t.value || day.c || 0;
+      let price = 0;
+      if (poly.startsWith('X:')) {
+        // Crypto: day.c is current price, lastTrade.p is last trade
+        price = day.c || t.lastTrade?.p || t.min?.c || prev.c || 0;
+      } else if (poly.startsWith('I:')) {
+        // Index: value field is current, fallback to day.c
+        price = t.value || t.lastTrade?.p || day.c || 0;
+      } else {
+        // Stocks/ETFs
+        price = t.lastTrade?.p || t.lastQuote?.P || day.c || prev.c || 0;
+      }
 
       const prevClose = prev.c || 0;
-      const chgPct    = t.todaysChangePerc !== undefined
-        ? t.todaysChangePerc
-        : prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : 0;
+      const chgPct = (t.todaysChangePerc !== undefined && t.todaysChangePerc !== null)
+        ? parseFloat(t.todaysChangePerc.toFixed(2))
+        : prevClose > 0 ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(2)) : 0;
 
       if (price > 0) {
         pulseStore[sym] = {
