@@ -226,32 +226,26 @@ const pulseStore = {};  // sym -> { price, prevClose, chgPct, session, updatedAt
 async function runPulseFetch() {
   const apiKey = process.env.POLYGON_API_KEY || '';
   if (!apiKey) return;
+
+  // Fetch stocks/ETFs and indices via Polygon
   for (const { sym, poly } of PULSE_SYMBOLS) {
+    if (poly.startsWith('X:')) continue; // handled separately below
     try {
       let url;
-      if (poly.startsWith('X:'))
-        url = `https://api.polygon.io/v2/snapshot/locale/global/markets/crypto/tickers/${poly}?apiKey=${apiKey}`;
-      else if (poly.startsWith('I:'))
+      if (poly.startsWith('I:'))
         url = `https://api.polygon.io/v2/snapshot/locale/us/markets/indices/tickers/${poly}?apiKey=${apiKey}`;
       else
         url = `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers/${poly}?apiKey=${apiKey}`;
 
-      const res = await axios.get(url, { timeout: 8000 });
-      const t   = res.data?.ticker || {};
+      const res  = await axios.get(url, { timeout: 8000 });
+      const t    = res.data?.ticker || {};
       const day  = t.day     || {};
       const prev = t.prevDay || {};
-
-      let price = 0;
-      if (poly.startsWith('X:')) {
-        // Crypto: day.c is current price, lastTrade.p is last trade
-        price = day.c || t.lastTrade?.p || t.min?.c || prev.c || 0;
-      } else if (poly.startsWith('I:')) {
-        // Index: value field is current, fallback to day.c
+      let price  = 0;
+      if (poly.startsWith('I:'))
         price = t.value || t.lastTrade?.p || day.c || 0;
-      } else {
-        // Stocks/ETFs
+      else
         price = t.lastTrade?.p || t.lastQuote?.P || day.c || prev.c || 0;
-      }
 
       const prevClose = prev.c || 0;
       const chgPct = (t.todaysChangePerc !== undefined && t.todaysChangePerc !== null)
@@ -259,18 +253,27 @@ async function runPulseFetch() {
         : prevClose > 0 ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(2)) : 0;
 
       if (price > 0) {
-        pulseStore[sym] = {
-          price:     parseFloat(price.toFixed(2)),
-          prevClose: parseFloat(prevClose.toFixed(2)),
-          chgPct:    parseFloat(chgPct.toFixed(2)),
-          updatedAt: Date.now(),
-        };
+        pulseStore[sym] = { price: parseFloat(price.toFixed(2)), prevClose: parseFloat(prevClose.toFixed(2)), chgPct, updatedAt: Date.now() };
       }
-    } catch(e) {
-      // keep stale value on error
-    }
-    await new Promise(r => setTimeout(r, 300)); // stagger requests
+    } catch(e) { /* keep stale */ }
+    await new Promise(r => setTimeout(r, 300));
   }
+
+  // Fetch BTC via CoinGecko — free, no key, works 24/7
+  try {
+    const res = await axios.get(
+      'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true',
+      { timeout: 8000 }
+    );
+    const btc = res.data?.bitcoin;
+    if (btc && btc.usd > 0) {
+      const price    = btc.usd;
+      const chgPct   = parseFloat((btc.usd_24h_change || 0).toFixed(2));
+      const prevClose= parseFloat((price / (1 + chgPct / 100)).toFixed(2));
+      pulseStore['BTC'] = { price, prevClose, chgPct, updatedAt: Date.now() };
+    }
+  } catch(e) { /* keep stale */ }
+
   console.log('[Pulse] Updated:', Object.keys(pulseStore).join(', '));
 }
 
