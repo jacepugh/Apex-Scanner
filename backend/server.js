@@ -1,10 +1,6 @@
 /**
  * APEX SCANNER — Backend Server
  * Node.js + Express + WebSocket
- * 
- * Install: npm install
- * Run:     npm start
- * Dev:     npm run dev
  */
 
 const express    = require('express');
@@ -14,7 +10,6 @@ const cors       = require('cors');
 const helmet     = require('helmet');
 const rateLimit  = require('express-rate-limit');
 const path       = require('path');
-const cron       = require('node-cron');
 
 const scannerRoutes = require('./routes/scanner');
 const newsRoutes    = require('./routes/news');
@@ -23,6 +18,7 @@ process.env.DATA_SOURCE = 'polygon';
 const { ScannerService } = require('./services/scanner');
 const { NewsService }    = require('./services/news');
 const { CacheService }   = require('./services/cache');
+const store              = require('./services/store');
 
 require('dotenv').config();
 
@@ -30,13 +26,12 @@ const app    = express();
 const server = http.createServer(app);
 const wss    = new WebSocket.Server({ server });
 
-// ─── MIDDLEWARE ────────────────────────────────────────────────
+// ─── MIDDLEWARE ──────────────────────────────────────────────
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') || '*' }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// Rate limiting
 const limiter = rateLimit({
   windowMs: 60 * 1000,
   max: 120,
@@ -44,47 +39,50 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// ─── SERVICES ─────────────────────────────────────────────────
+// ─── SERVICES ────────────────────────────────────────────────
 const cache   = new CacheService();
 const news    = new NewsService({ cache, apiKey: process.env.NEWS_API_KEY });
 const scanner = new ScannerService({ cache, news });
 
-// Make services available to routes
 app.locals.scanner = scanner;
 app.locals.news    = news;
 app.locals.cache   = cache;
 app.locals.wss     = wss;
+app.locals.store   = store;
 
-// ─── ROUTES ───────────────────────────────────────────────────
+// ─── ROUTES ──────────────────────────────────────────────────
 app.use('/api/scanner', scannerRoutes);
 app.use('/api/news',    newsRoutes);
 app.use('/api/alerts',  alertRoutes);
-app.use('/api/pulse', require('./routes/pulse'));
+app.use('/api/pulse',   require('./routes/pulse'));
 
-// Health check
 app.get('/api/health', (req, res) => {
   res.json({
-    status: 'ok',
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString(),
+    status:     'ok',
+    uptime:     process.uptime(),
+    timestamp:  new Date().toISOString(),
     dataSource: process.env.DATA_SOURCE || 'demo',
+    store:      store.stats(),
   });
 });
 
-// Serve frontend for all non-API routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
-// ─── WEBSOCKET ────────────────────────────────────────────────
-const wsClients = new Map(); // clientId → { ws, filters }
+// ─── WEBSOCKET ───────────────────────────────────────────────
+const wsClients = new Map();
 
 wss.on('connection', (ws, req) => {
   const clientId = Math.random().toString(36).slice(2);
   wsClients.set(clientId, { ws, filters: {} });
   console.log(`[WS] Client connected: ${clientId} (total: ${wsClients.size})`);
-
   ws.send(JSON.stringify({ type: 'connected', clientId }));
+
+  // Send latest store pool immediately on connect
+  if (!store.isEmpty()) {
+    ws.send(JSON.stringify({ type: 'scan_results', data: store.get(), timestamp: Date.now() }));
+  }
 
   ws.on('message', (raw) => {
     try {
@@ -93,66 +91,72 @@ wss.on('connection', (ws, req) => {
         wsClients.get(clientId).filters = msg.filters;
         ws.send(JSON.stringify({ type: 'filters_ack', filters: msg.filters }));
       }
-      if (msg.type === 'ping') {
-        ws.send(JSON.stringify({ type: 'pong' }));
-      }
+      if (msg.type === 'ping') ws.send(JSON.stringify({ type: 'pong' }));
     } catch (e) {
       console.warn('[WS] Bad message:', e.message);
     }
   });
 
-  ws.on('close', () => {
-    wsClients.delete(clientId);
-    console.log(`[WS] Client disconnected: ${clientId}`);
-  });
-
-  ws.on('error', (err) => {
-    console.error('[WS] Error:', err.message);
-    wsClients.delete(clientId);
-  });
+  ws.on('close', () => { wsClients.delete(clientId); });
+  ws.on('error', (err) => { console.error('[WS] Error:', err.message); wsClients.delete(clientId); });
 });
 
-// Broadcast scan results to all connected clients
 function broadcast(type, data) {
   const msg = JSON.stringify({ type, data, timestamp: Date.now() });
   let sent = 0;
-  wsClients.forEach(({ ws, filters }, clientId) => {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(msg);
-      sent++;
-    } else {
-      wsClients.delete(clientId);
-    }
+  wsClients.forEach(({ ws }, clientId) => {
+    if (ws.readyState === WebSocket.OPEN) { ws.send(msg); sent++; }
+    else wsClients.delete(clientId);
   });
   return sent;
 }
-
 app.locals.broadcast = broadcast;
 
-// ─── SCAN SCHEDULER ───────────────────────────────────────────
-// Pre-market scan: every 15s from 4:00–9:30 ET
-// Market hours scan: every 10s from 9:30–16:00 ET
-// After-hours: every 30s
+// ─── WIDE SCAN FILTERS ───────────────────────────────────────
+// Backend always scans wide — frontend filters the pool
+const WIDE_FILTERS = {
+  priceMin:     0.50,
+  priceMax:     25.00,
+  gapMin:       0,
+  floatMax:     500000000,
+  dollarVolMin: 0,
+  floatRotMin:  0,
+  volMin:       0,
+  rvolMin:      0,
+  excludeEtf:   true,
+};
 
+// ─── SCAN SCHEDULER ──────────────────────────────────────────
 let scanRunning = false;
 
 async function runScan() {
   if (scanRunning) return;
   scanRunning = true;
   try {
-    const results = await scanner.scan();
-    if (results.length > 0) {
+    const session = scanner.getMarketSession();
+
+    // Skip scan during closed hours — store stays stale, frontend shows last results
+    if (session === 'closed') {
+      console.log('[Scan] Market closed — skipping scan');
+      scanRunning = false;
+      return;
+    }
+
+    const results = await scanner.scan(WIDE_FILTERS);
+
+    if (results && results.length > 0 && !results[0].ticker?.startsWith('DEMO')) {
+      store.set(results, session);
       broadcast('scan_results', results);
-      
-      // Check for breakout alerts
+
+      // Alert broadcasts
       const alerts = results.filter(s => s.breakingPmh || s.volumeSpike || s.newSetup);
       if (alerts.length > 0) {
         broadcast('alerts', alerts.map(s => ({
-          ticker: s.ticker,
-          type: s.breakingPmh ? 'pmh' : s.volumeSpike ? 'vspike' : 'new-ticker',
-          price: s.price,
+          ticker:  s.ticker,
+          type:    s.breakingPmh ? 'pmh' : s.volumeSpike ? 'vspike' : 'new',
+          price:   s.price,
           message: s.breakingPmh ? `Breaking PM High $${s.pmHigh?.toFixed(2)}`
-                 : s.volumeSpike ? `Vol Spike ${s.rvol?.toFixed(1)}×`
+                 : s.volumeSpike ? `Vol Spike`
                  : `New setup — Gap ${s.gapPct?.toFixed(1)}%`,
         })));
       }
@@ -163,43 +167,48 @@ async function runScan() {
   scanRunning = false;
 }
 
-// Schedule based on market hours (ET)
 function getRefreshInterval() {
-  const now = new Date();
-  const etHour = parseInt(now.toLocaleString('en-US', { timeZone: 'America/New_York', hour: '2-digit', hour12: false }));
-  const etMin  = parseInt(now.toLocaleString('en-US', { timeZone: 'America/New_York', minute: '2-digit' }));
-  const mins = etHour * 60 + etMin;
-  if (mins >= 240 && mins < 570)  return 15000; // Pre-market: 15s
-  if (mins >= 570 && mins < 960)  return 10000; // Market: 10s
-  if (mins >= 960 && mins < 1200) return 30000; // AH: 30s
-  return 60000; // Closed: 60s
+  const now  = new Date();
+  const etH  = parseInt(now.toLocaleString('en-US', { timeZone: 'America/New_York', hour: '2-digit', hour12: false }));
+  const etM  = parseInt(now.toLocaleString('en-US', { timeZone: 'America/New_York', minute: '2-digit' }));
+  const mins = etH * 60 + etM;
+  if (mins >= 240 && mins < 570)  return 60000;  // Pre-market:  60s
+  if (mins >= 570 && mins < 960)  return 30000;  // Market open: 30s
+  if (mins >= 960 && mins < 1200) return 120000; // After hours: 2min
+  return null; // Closed: don't schedule
 }
 
 let scanTimer = null;
 function scheduleScan() {
   if (scanTimer) clearTimeout(scanTimer);
   const interval = getRefreshInterval();
+  if (!interval) {
+    console.log('[Scheduler] Market closed — scan paused until pre-market');
+    // Check again in 10 minutes in case we cross into pre-market
+    scanTimer = setTimeout(scheduleScan, 600000);
+    return;
+  }
   scanTimer = setTimeout(async () => {
     await runScan();
-    scheduleScan(); // adaptive reschedule
+    scheduleScan();
   }, interval);
 }
 
-// ─── STARTUP ──────────────────────────────────────────────────
+// ─── STARTUP ─────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, async () => {
   console.log(`\n🚀 APEX SCANNER running on http://localhost:${PORT}`);
   console.log(`📡 WebSocket server active`);
   console.log(`🔑 Data source: ${process.env.DATA_SOURCE || 'demo'}`);
+  console.log(`📦 Store: wide scan pool, filters applied at read time`);
   console.log(`\nPress Ctrl+C to stop\n`);
 
-  // Initial scan
   await runScan();
   scheduleScan();
 });
 
-// Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('Shutting down...');
+  if (scanTimer) clearTimeout(scanTimer);
   server.close(() => process.exit(0));
 });
