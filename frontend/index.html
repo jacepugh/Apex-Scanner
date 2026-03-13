@@ -694,21 +694,17 @@ async function fetchPulse() {
 }
 
 async function fetchPulseTicker(t) {
-  // Route through Polygon snapshot endpoint via our backend key
-  const url = `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers/${encodeURIComponent(t.poly)}?apiKey=${STATE.polygonKey||''}`;
-  // For crypto/indices we use different endpoints — fall back gracefully
-  let price = null, prevClose = null, chgPct = null;
   try {
-    // Try stocks snapshot first (works for SPY, QQQ, IWM, XBI)
     const res = await fetch(`${BACKEND}/api/pulse?ticker=${encodeURIComponent(t.poly)}`);
-    if (res.ok) {
-      const d = await res.json();
-      price    = d.price;
-      prevClose= d.prevClose;
-      chgPct   = d.chgPct;
-    }
-  } catch(e) {}
-  return price !== null ? { price, prevClose, chgPct } : null;
+    if (!res.ok) return null;
+    const d = await res.json();
+    // Validate we actually got a price back
+    if (!d || typeof d.price === 'undefined' || d.error) return null;
+    return { price: d.price, prevClose: d.prevClose, chgPct: d.chgPct };
+  } catch(e) {
+    console.warn('[Pulse] fetch failed for', t.poly, e.message);
+    return null;
+  }
 }
 
 function renderPulseTile(sym, d) {
