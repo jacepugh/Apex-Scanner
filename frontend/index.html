@@ -7,6 +7,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="theme-color" content="#080b10"/>
 <title>SCANNY BOI</title>
+<link rel="manifest" href="/manifest.json"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="Scanny Boi"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Rajdhani:wght@500;600;700&family=Bebas+Neue&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
 :root {
@@ -84,6 +88,22 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .skel-line{height:10px;background:var(--bg3);border-radius:4px}
 .skel-line.w60{width:60%}.skel-line.w40{width:40%}.skel-line.w75{width:75%}
 .skel-right{width:36px;height:22px;background:var(--bg3);border-radius:4px;flex-shrink:0}
+
+/* ── ENTRY ZONE ── */
+.entry-zone{
+  background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.2);
+  border-radius:8px;padding:10px 12px;margin:10px 0 4px;
+}
+.ez-title{font-family:var(--mono);font-size:9px;color:var(--accent);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px}
+.ez-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.ez-item{display:flex;flex-direction:column;gap:2px}
+.ez-label{font-family:var(--mono);font-size:8px;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase}
+.ez-val{font-family:var(--mono);font-size:13px;font-weight:500}
+.ez-val.entry{color:var(--accent)}
+.ez-val.stop{color:var(--red)}
+.ez-val.target{color:var(--green)}
+.ez-val.rr{color:var(--gold)}
+.ez-note{font-family:var(--mono);font-size:9px;color:var(--dim);margin-top:6px;line-height:1.4}
 
 /* ── PAGES ── */
 #page-scanner,#page-sizer,#page-pulse{
@@ -889,6 +909,32 @@ function patchCardData(cardEl,s){
   if(sizeBtn)sizeBtn.setAttribute('onclick',`event.stopPropagation();openSizerWithPrice(${s.price})`);
 }
 
+function calcEntryZone(s) {
+  // Requires pmHigh and prevClose to be meaningful
+  if (!s.pmHigh || !s.prevClose || s.pmHigh <= 0 || s.prevClose <= 0) return null;
+
+  const pmHigh   = s.pmHigh;
+  const pmLow    = s.pmLow || s.prevClose;
+  const price    = s.price;
+
+  // Entry zone: pullback to just below PM high (support), breakout just above
+  const entryLow  = parseFloat((pmHigh * 0.97).toFixed(2));
+  const entryHigh = parseFloat((pmHigh * 1.002).toFixed(2));
+
+  // Stop: below PM low or 3% below entry, whichever is tighter
+  const stopFromPmLow   = parseFloat((pmLow * 0.99).toFixed(2));
+  const stopFromEntry   = parseFloat((entryLow * 0.97).toFixed(2));
+  const stop = Math.max(stopFromPmLow, stopFromEntry);
+
+  if (stop >= entryLow) return null; // invalid setup
+
+  const risk    = entryHigh - stop;
+  const target  = parseFloat((entryHigh + risk * 2).toFixed(2));
+  const rr      = (risk > 0) ? parseFloat((risk * 2 / risk).toFixed(1)) : 0;
+
+  return { entryLow, entryHigh, stop, target, rr: '2:1' };
+}
+
 function buildCardHtml(s,i,isNew=false){
   const floatM=s.float?s.float/1e6:null;
   const isUltra=floatM&&floatM<10,isLow=floatM&&floatM<20;
@@ -916,6 +962,20 @@ function buildCardHtml(s,i,isNew=false){
         <div class="dg-item"><div class="dg-label">PM Low</div><div class="dg-val">$${s.pmLow||'—'}</div></div>
         ${floatM2?'<div class="dg-item"><div class="dg-label">Float</div><div class="dg-val">'+floatM2.toFixed(1)+'M</div></div>':''}
       </div>
+      ${(()=>{
+        const ez = calcEntryZone(s);
+        if (!ez) return '';
+        return `<div class="entry-zone">
+          <div class="ez-title">⚡ First Pullback Setup</div>
+          <div class="ez-grid">
+            <div class="ez-item"><div class="ez-label">Entry Zone</div><div class="ez-val entry">$${ez.entryLow}–$${ez.entryHigh}</div></div>
+            <div class="ez-item"><div class="ez-label">Stop</div><div class="ez-val stop">$${ez.stop}</div></div>
+            <div class="ez-item"><div class="ez-label">2R Target</div><div class="ez-val target">$${ez.target}</div></div>
+            <div class="ez-item"><div class="ez-label">R:R</div><div class="ez-val rr">${ez.rr}</div></div>
+          </div>
+          <div class="ez-note">Entry near PM High retest · Stop below PM Low · 2R target</div>
+        </div>`;
+      })()}
       <div class="news-section">
         <div class="news-section-label">News Catalyst</div>
         ${newsHtml}
@@ -1240,6 +1300,10 @@ function sizerCalc(){
 
 // ─── INIT ────────────────────────────────────────
 function init(){
+  // Register PWA service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
   updateClock();
   setInterval(updateClock,1000);
   ['dvol','frot','gap','float'].forEach(updateSliderDisplay);
