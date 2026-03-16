@@ -32,19 +32,16 @@ class ScannerService {
   // ─── MAIN SCAN ────────────────────────────────
   async scan(filters = {}) {
     const f = {
-      priceMin:        parseFloat(filters.priceMin        ?? process.env.PRICE_MIN        ?? '0.50'),
-      priceMax:        parseFloat(filters.priceMax        ?? process.env.PRICE_MAX        ?? '25.00'),
-      // Dollar volume floor — replaces raw share volume as primary filter
-      dollarVolMin:    parseFloat(filters.dollarVolMin    ?? process.env.DOLLAR_VOL_MIN   ?? '0'),
-      // Float rotation % — replaces RVOL as primary pre-market filter
-      floatRotMin:     parseFloat(filters.floatRotMin     ?? process.env.FLOAT_ROT_MIN    ?? '0'),
-      gapMin:          parseFloat(filters.gapMin          ?? process.env.GAP_MIN          ?? '0'),
-      floatMax:        parseInt(  filters.floatMax        ?? process.env.FLOAT_MAX        ?? '50000000'),
-      // Legacy — kept for backwards compat, used as soft reference only
-      volMin:          parseInt(  filters.volMin          ?? process.env.VOL_MIN          ?? '0'),
-      rvolMin:         parseFloat(filters.rvolMin         ?? process.env.RVOL_MIN         ?? '0'),
-      catalyst:        filters.catalyst    === true || filters.catalyst    === 'true',
-      excludeEtf:      filters.excludeEtf !== false && filters.excludeEtf !== 'false',
+      priceMin:     parseFloat(filters.priceMin     ?? process.env.PRICE_MIN      ?? '0.50'),
+      priceMax:     parseFloat(filters.priceMax     ?? process.env.PRICE_MAX      ?? '25.00'),
+      dollarVolMin: parseFloat(filters.dollarVolMin ?? process.env.DOLLAR_VOL_MIN ?? '0'),
+      floatRotMin:  parseFloat(filters.floatRotMin  ?? process.env.FLOAT_ROT_MIN  ?? '0'),
+      gapMin:       parseFloat(filters.gapMin       ?? process.env.GAP_MIN        ?? '0'),
+      floatMax:     parseInt(  filters.floatMax     ?? process.env.FLOAT_MAX      ?? '50000000'),
+      volMin:       parseInt(  filters.volMin       ?? process.env.VOL_MIN        ?? '0'),
+      rvolMin:      parseFloat(filters.rvolMin      ?? process.env.RVOL_MIN       ?? '0'),
+      catalyst:     filters.catalyst   === true || filters.catalyst   === 'true',
+      excludeEtf:   filters.excludeEtf !== false && filters.excludeEtf !== 'false',
     };
 
     const session = this.getMarketSession();
@@ -55,7 +52,22 @@ class ScannerService {
 
     try {
       if (this.source === 'polygon' && this.apiKey) {
-        stocks = await this.fetchPolygonSnapshot(f, session);
+        if (session === 'premarket' || session === 'afterhours') {
+          // Pre/after market: gainers endpoint has real extended-hours prices
+          // Full snapshot only has prev close for most tickers outside regular hours
+          console.log('[Scanner] Extended hours — using gainers endpoint for real prices');
+          stocks = await this.fetchPolygonGainers(f, session);
+          // If gainers returns very few results, also pull snapshot as supplement
+          if (stocks.length < 10) {
+            console.log('[Scanner] Gainers thin, supplementing with snapshot...');
+            const snap = await this.fetchPolygonSnapshot(f, session);
+            const existing = new Set(stocks.map(s => s.ticker));
+            snap.forEach(s => { if (!existing.has(s.ticker)) stocks.push(s); });
+          }
+        } else {
+          // Regular hours: full snapshot has accurate real-time prices
+          stocks = await this.fetchPolygonSnapshot(f, session);
+        }
       } else if (this.source === 'finnhub' && this.apiKey) {
         stocks = await this.fetchFinnhubGainers();
       } else {
@@ -314,12 +326,14 @@ class ScannerService {
     console.log('[Scanner] Float enrichment complete');
   }
 
-  // ─── GAINERS FALLBACK ─────────────────────────
+  // ─── GAINERS (PRIMARY PRE-MARKET) ────────────
   async fetchPolygonGainers(f = {}, session = 'regular') {
-    const cached = this.cache.get('poly_gainers');
+    // Use session-specific cache key so pre-market and regular don't collide
+    const cacheKey = 'poly_gainers_' + session;
+    const cached   = this.cache.get(cacheKey);
     if (cached) { console.log('[Polygon] Gainers cache hit:', cached.length); return cached; }
 
-    console.log('[Polygon] Fetching gainers...');
+    console.log('[Polygon] Fetching gainers for session:', session);
     let res;
     try {
       res = await axios.get(
@@ -335,13 +349,23 @@ class ScannerService {
     }
 
     const tickers = res.data?.tickers || [];
-    console.log('[Polygon] Gainers returned:', tickers.length);
+    console.log('[Polygon] Gainers returned:', tickers.length, 'raw tickers');
 
     const stocks = tickers
       .map(t => { try { return this.parseTicker(t, session, f); } catch(e) { return null; } })
       .filter(Boolean);
 
-    this.cache.set('poly_gainers', stocks, 20);
+    // Sort by gap tier then gap %
+    stocks.sort((a, b) => {
+      if (b.gapTier !== a.gapTier) return b.gapTier - a.gapTier;
+      return b.gapPct - a.gapPct;
+    });
+
+    console.log('[Polygon] Gainers after parse:', stocks.length, '| top gap:', stocks[0]?.ticker, stocks[0]?.gapPct + '%');
+
+    // Shorter cache during pre-market — prices moving fast
+    const ttl = session === 'premarket' ? 30 : 20;
+    this.cache.set(cacheKey, stocks, ttl);
     return stocks;
   }
 
