@@ -484,6 +484,7 @@ window.addEventListener('unhandledrejection', function(e) {
     </div>
   </div>
   <div class="header-right">
+    <div class="icon-btn" id="header-refresh" onclick="manualRefresh()" title="Refresh">🔄</div>
     <div class="icon-btn" onclick="openSettings()">⚙️</div>
   </div>
 </header>
@@ -614,9 +615,6 @@ window.addEventListener('unhandledrejection', function(e) {
   </button>
   <button class="nav-item" id="nav-filters" onclick="openFilters()">
     <div class="nav-icon">🎛️</div><span>Filters</span>
-  </button>
-  <button class="nav-item" id="nav-refresh" onclick="manualRefresh()">
-    <div class="nav-icon">🔄</div><span>Refresh</span>
   </button>
   <button class="nav-item" id="nav-sizer" onclick="showPage('sizer')">
     <div class="nav-icon">🧮</div><span>Sizer</span>
