@@ -4,7 +4,7 @@
  * API calls always go to network — never cached
  */
 
-const CACHE_NAME = 'scanny-boi-v1';
+const CACHE_NAME = 'scanny-boi-v3';
 const SHELL = [
   '/',
   '/index.html',
