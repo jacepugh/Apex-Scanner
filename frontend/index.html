@@ -89,6 +89,66 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .skel-line.w60{width:60%}.skel-line.w40{width:40%}.skel-line.w75{width:75%}
 .skel-right{width:36px;height:22px;background:var(--bg3);border-radius:4px;flex-shrink:0}
 
+/* ── PIN PAD ── */
+#pin-screen{
+  position:fixed;inset:0;z-index:9999;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;
+}
+#pin-screen.hidden{display:none}
+.pin-logo{font-family:var(--head);font-size:28px;font-weight:700;color:var(--text);letter-spacing:0.05em}
+.pin-logo span{color:var(--accent)}
+.pin-subtitle{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:0.12em;text-transform:uppercase}
+.pin-dots{display:flex;gap:12px;margin:8px 0}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border2);background:transparent;transition:all 0.15s}
+.pin-dot.filled{background:var(--accent);border-color:var(--accent);box-shadow:0 0 8px var(--accent)}
+.pin-dot.error{background:var(--red);border-color:var(--red)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:240px}
+.pin-btn{
+  height:64px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;
+  font-family:var(--head);font-size:24px;font-weight:600;color:var(--text);
+  cursor:pointer;transition:all 0.1s;display:flex;align-items:center;justify-content:center;
+}
+.pin-btn:active{transform:scale(0.92);background:var(--bg3);border-color:var(--accent)}
+.pin-btn.del{font-size:18px;color:var(--dim)}
+.pin-btn.empty{background:transparent;border:none;pointer-events:none}
+.pin-error{font-family:var(--mono);font-size:11px;color:var(--red);letter-spacing:0.08em;min-height:16px}
+
+/* ── JOURNAL ── */
+#page-journal{
+  position:fixed;
+  top:calc(var(--safe-top) + 56px);
+  bottom:calc(var(--safe-bot) + 60px);
+  left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  display:none;padding:12px;
+}
+.journal-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+.jstat{background:var(--bg1);border:1px solid var(--border);border-radius:10px;padding:12px}
+.jstat-label{font-family:var(--mono);font-size:8px;color:var(--dim);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px}
+.jstat-val{font-family:var(--mono);font-size:20px;font-weight:500;color:var(--text)}
+.jstat-val.green{color:var(--green)}.jstat-val.red{color:var(--red)}.jstat-val.gold{color:var(--gold)}
+.journal-section-title{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:0.12em;text-transform:uppercase;margin:12px 0 8px;display:flex;align-items:center;justify-content:space-between}
+.import-btn{font-family:var(--mono);font-size:9px;color:var(--accent);letter-spacing:0.08em;background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.2);border-radius:6px;padding:4px 10px;cursor:pointer}
+.import-btn:active{opacity:0.7}
+.trade-row{background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.trade-row.win{border-left:3px solid var(--green)}
+.trade-row.loss{border-left:3px solid var(--red)}
+.trade-row.scratch{border-left:3px solid var(--dim)}
+.tr-ticker{font-family:var(--head);font-size:16px;font-weight:700;color:var(--text);width:52px;flex-shrink:0}
+.tr-meta{flex:1;display:flex;flex-direction:column;gap:2px}
+.tr-prices{font-family:var(--mono);font-size:10px;color:var(--mid)}
+.tr-date{font-family:var(--mono);font-size:9px;color:var(--dim)}
+.tr-pnl{font-family:var(--mono);font-size:15px;font-weight:500;text-align:right;flex-shrink:0}
+.tr-pnl.pos{color:var(--green)}.tr-pnl.neg{color:var(--red)}.tr-pnl.zero{color:var(--dim)}
+.journal-empty{text-align:center;padding:40px 20px;font-family:var(--mono);font-size:11px;color:var(--dim);line-height:1.8}
+.streak-banner{background:rgba(255,64,96,0.08);border:1px solid rgba(255,64,96,0.3);border-radius:8px;padding:10px 14px;margin-bottom:10px;font-family:var(--mono);font-size:11px;color:var(--red);display:none}
+.streak-banner.show{display:block}
+.daily-limit-bar{background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:10px}
+.dlb-label{font-family:var(--mono);font-size:8px;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px}
+.dlb-track{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.dlb-fill{height:100%;border-radius:3px;transition:width 0.3s;background:var(--green)}
+.dlb-fill.warn{background:var(--gold)}.dlb-fill.danger{background:var(--red)}
+.dlb-numbers{font-family:var(--mono);font-size:10px;color:var(--mid);margin-top:4px;display:flex;justify-content:space-between}
+
 /* ── ENTRY ZONE ── */
 .entry-zone{
   background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.2);
@@ -370,6 +430,32 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 </style>
 </head>
 <body>
+<!-- PIN SCREEN -->
+<div id="pin-screen">
+  <div class="pin-logo">SCANNY <span>BOI</span></div>
+  <div class="pin-subtitle">Enter PIN to access</div>
+  <div class="pin-dots">
+    <div class="pin-dot" id="pd0"></div>
+    <div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div>
+    <div class="pin-dot" id="pd3"></div>
+  </div>
+  <div class="pin-error" id="pin-error"></div>
+  <div class="pin-pad">
+    <button class="pin-btn" onclick="pinKey('1')">1</button>
+    <button class="pin-btn" onclick="pinKey('2')">2</button>
+    <button class="pin-btn" onclick="pinKey('3')">3</button>
+    <button class="pin-btn" onclick="pinKey('4')">4</button>
+    <button class="pin-btn" onclick="pinKey('5')">5</button>
+    <button class="pin-btn" onclick="pinKey('6')">6</button>
+    <button class="pin-btn" onclick="pinKey('7')">7</button>
+    <button class="pin-btn" onclick="pinKey('8')">8</button>
+    <button class="pin-btn" onclick="pinKey('9')">9</button>
+    <button class="pin-btn empty"></button>
+    <button class="pin-btn" onclick="pinKey('0')">0</button>
+    <button class="pin-btn del" onclick="pinDel()">⌫</button>
+  </div>
+</div>
 <div id="errbanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#ff4060;color:#fff;font-family:monospace;font-size:11px;padding:8px 12px;white-space:pre-wrap;word-break:break-all;max-height:40vh;overflow-y:auto"></div>
 <script>
 window.onerror = function(msg, src, line, col, err) {
@@ -534,6 +620,9 @@ window.addEventListener('unhandledrejection', function(e) {
   </button>
   <button class="nav-item" id="nav-sizer" onclick="showPage('sizer')">
     <div class="nav-icon">🧮</div><span>Sizer</span>
+  </button>
+  <button class="nav-item" id="nav-journal" onclick="showPage('journal')">
+    <div class="nav-icon">📒</div><span>Journal</span>
   </button>
 </nav>
 
@@ -795,6 +884,7 @@ function showPage(page) {
   document.getElementById('page-scanner').style.display = 'none';
   document.getElementById('page-pulse').style.display = 'none';
   document.getElementById('page-sizer').style.display = 'none';
+  document.getElementById('page-journal').style.display = 'none';
   document.body.classList.remove('sizer-active','pulse-active');
   if (page === 'sizer') {
     document.body.classList.add('sizer-active');
@@ -803,6 +893,9 @@ function showPage(page) {
     document.body.classList.add('pulse-active');
     document.getElementById('page-pulse').style.display = 'block';
     fetchPulse();
+  } else if (page === 'journal') {
+    document.getElementById('page-journal').style.display = 'block';
+    renderJournal();
   } else {
     document.getElementById('page-scanner').style.display = 'block';
     if (page === 'scanner') manualRefresh();
@@ -1299,11 +1392,223 @@ function sizerCalc(){
 }
 
 // ─── INIT ────────────────────────────────────────
+// ─── PIN PAD ─────────────────────────────────────────────────
+const PIN_KEY = 'sb_auth';
+const PIN_CODE = '1337'; // change this to your preferred PIN
+
+let pinEntry = '';
+
+function pinKey(d) {
+  if (pinEntry.length >= 4) return;
+  pinEntry += d;
+  updatePinDots();
+  if (pinEntry.length === 4) {
+    setTimeout(checkPin, 120);
+  }
+}
+
+function pinDel() {
+  pinEntry = pinEntry.slice(0, -1);
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+  document.querySelectorAll('.pin-dot').forEach(d => d.classList.remove('error'));
+}
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById('pd' + i);
+    dot.classList.toggle('filled', i < pinEntry.length);
+    dot.classList.remove('error');
+  }
+}
+
+function checkPin() {
+  if (pinEntry === PIN_CODE) {
+    localStorage.setItem(PIN_KEY, '1');
+    document.getElementById('pin-screen').classList.add('hidden');
+  } else {
+    document.querySelectorAll('.pin-dot').forEach(d => d.classList.add('error'));
+    document.getElementById('pin-error').textContent = 'Incorrect PIN';
+    setTimeout(() => {
+      pinEntry = '';
+      updatePinDots();
+      document.getElementById('pin-error').textContent = '';
+    }, 800);
+  }
+}
+
+function checkAuth() {
+  if (localStorage.getItem(PIN_KEY) === '1') {
+    document.getElementById('pin-screen').classList.add('hidden');
+  }
+}
+
+// ─── JOURNAL ─────────────────────────────────────────────────
+const JOURNAL_KEY  = 'sb_journal_trades';
+const DAILY_LOSS_LIMIT = 25;
+
+let journalTrades = [];
+
+function journalLoad() {
+  try {
+    journalTrades = JSON.parse(localStorage.getItem(JOURNAL_KEY) || '[]');
+  } catch(e) {
+    journalTrades = [];
+  }
+  renderJournal();
+}
+
+function journalSave() {
+  localStorage.setItem(JOURNAL_KEY, JSON.stringify(journalTrades));
+}
+
+function importCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const lines = e.target.result.split('\n').filter(Boolean);
+    const headers = lines[0].split(',').map(h => h.trim());
+    const idxMap = {
+      id:       headers.indexOf('Position ID'),
+      date:     headers.indexOf('Date'),
+      symbol:   headers.indexOf('Symbol'),
+      side:     headers.indexOf('Side'),
+      qty:      headers.indexOf('Quantity'),
+      entry:    headers.indexOf('Entry Price'),
+      exit:     headers.indexOf('Exit Price'),
+      pnl:      headers.indexOf('P&L'),
+      notes:    headers.indexOf('Notes'),
+    };
+    const existing = new Set(journalTrades.map(t => t.id));
+    let added = 0;
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(',');
+      if (cols.length < 8) continue;
+      const id = cols[idxMap.id]?.trim();
+      if (!id || existing.has(id)) continue;
+      journalTrades.push({
+        id,
+        date:   cols[idxMap.date]?.trim(),
+        symbol: cols[idxMap.symbol]?.trim(),
+        side:   cols[idxMap.side]?.trim(),
+        qty:    parseInt(cols[idxMap.qty]) || 0,
+        entry:  parseFloat(cols[idxMap.entry]) || 0,
+        exit:   parseFloat(cols[idxMap.exit]) || 0,
+        pnl:    parseFloat(cols[idxMap.pnl]) || 0,
+        notes:  cols[idxMap.notes]?.trim() || '',
+      });
+      added++;
+    }
+    // Sort newest first
+    journalTrades.sort((a,b) => new Date(b.date) - new Date(a.date));
+    journalSave();
+    renderJournal();
+    event.target.value = '';
+    alert(added + ' new trades imported');
+  };
+  reader.readAsText(file);
+}
+
+function renderJournal() {
+  const list = document.getElementById('trade-list');
+  if (!list) return;
+
+  if (!journalTrades.length) {
+    list.innerHTML = '<div class="journal-empty">No trades yet.<br/>Import a TradrLedger CSV<br/>to see your stats here.</div>';
+    updateJournalStats([]);
+    return;
+  }
+
+  // Today's trades
+  const today = new Date().toISOString().split('T')[0];
+  const todayTrades = journalTrades.filter(t => t.date === today);
+  const todayPnl    = todayTrades.reduce((s, t) => s + t.pnl, 0);
+
+  // Loss streak — count consecutive losses from most recent
+  let streak = 0;
+  for (const t of journalTrades) {
+    if (t.pnl < 0) streak++;
+    else break;
+  }
+
+  // Streak warning
+  const banner = document.getElementById('streak-banner');
+  if (banner) banner.classList.toggle('show', streak >= 2);
+
+  // Daily loss bar
+  const lossToday = Math.abs(Math.min(todayPnl, 0));
+  const pct       = Math.min((lossToday / DAILY_LOSS_LIMIT) * 100, 100);
+  const fill      = document.getElementById('dlb-fill');
+  if (fill) {
+    fill.style.width = pct + '%';
+    fill.className = 'dlb-fill' + (pct >= 100 ? ' danger' : pct >= 60 ? ' warn' : '');
+  }
+  const usedEl = document.getElementById('dlb-used');
+  if (usedEl) usedEl.textContent = '$' + lossToday.toFixed(2);
+  const tradesToday = document.getElementById('dlb-trades');
+  if (tradesToday) tradesToday.textContent = todayTrades.length + ' trade' + (todayTrades.length !== 1 ? 's' : '') + ' today';
+  const todayPnlEl = document.getElementById('dlb-today-pnl');
+  if (todayPnlEl) {
+    todayPnlEl.textContent = (todayPnl >= 0 ? '+' : '') + '$' + todayPnl.toFixed(2);
+    todayPnlEl.style.color = todayPnl >= 0 ? 'var(--green)' : 'var(--red)';
+  }
+
+  updateJournalStats(journalTrades);
+
+  // Render trade rows — show last 50
+  list.innerHTML = journalTrades.slice(0, 50).map(t => {
+    const cls  = t.pnl > 0.5 ? 'win' : t.pnl < -0.5 ? 'loss' : 'scratch';
+    const sign = t.pnl >= 0 ? '+' : '';
+    const pnlCls = t.pnl > 0.5 ? 'pos' : t.pnl < -0.5 ? 'neg' : 'zero';
+    return `<div class="trade-row ${cls}">
+      <div class="tr-ticker">${t.symbol}</div>
+      <div class="tr-meta">
+        <div class="tr-prices">$${t.entry.toFixed(2)} → $${t.exit.toFixed(2)} · ${t.qty} shares</div>
+        <div class="tr-date">${t.date}</div>
+      </div>
+      <div class="tr-pnl ${pnlCls}">${sign}$${Math.abs(t.pnl).toFixed(2)}</div>
+    </div>`;
+  }).join('');
+}
+
+function updateJournalStats(trades) {
+  const totalPnl = trades.reduce((s, t) => s + t.pnl, 0);
+  const wins     = trades.filter(t => t.pnl > 0.5);
+  const losses   = trades.filter(t => t.pnl < -0.5);
+  const winRate  = trades.length ? (wins.length / trades.length * 100) : 0;
+  const grossW   = wins.reduce((s, t) => s + t.pnl, 0);
+  const grossL   = Math.abs(losses.reduce((s, t) => s + t.pnl, 0));
+  const pf       = grossL > 0 ? grossW / grossL : grossW > 0 ? 999 : 0;
+  const avgW     = wins.length ? grossW / wins.length : 0;
+  const avgL     = losses.length ? grossL / losses.length : 0;
+
+  const pnlEl = document.getElementById('j-total-pnl');
+  if (pnlEl) {
+    pnlEl.textContent = (totalPnl >= 0 ? '+' : '') + '$' + totalPnl.toFixed(2);
+    pnlEl.className = 'jstat-val ' + (totalPnl >= 0 ? 'green' : 'red');
+  }
+  const wrEl = document.getElementById('j-winrate');
+  if (wrEl) {
+    wrEl.textContent = trades.length ? winRate.toFixed(1) + '%' : '—';
+    wrEl.className = 'jstat-val ' + (winRate >= 50 ? 'green' : winRate > 0 ? 'gold' : '');
+  }
+  const pfEl = document.getElementById('j-pf');
+  if (pfEl) {
+    pfEl.textContent = pf > 0 ? pf.toFixed(2) : '—';
+    pfEl.className = 'jstat-val ' + (pf >= 1.5 ? 'green' : pf >= 1 ? 'gold' : pf > 0 ? 'red' : '');
+  }
+  const wlEl = document.getElementById('j-avgwl');
+  if (wlEl) wlEl.textContent = avgW > 0 ? '+$' + avgW.toFixed(2) + ' / -$' + avgL.toFixed(2) : '—';
+}
+
 function init(){
   // Register PWA service worker
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   }
+  checkAuth();
+  journalLoad();
   updateClock();
   setInterval(updateClock,1000);
   ['dvol','frot','gap','float'].forEach(updateSliderDisplay);
@@ -1322,5 +1627,27 @@ function init(){
 
 init();
 </script>
+<!-- JOURNAL PAGE -->
+<div id="page-journal">
+  <div id="streak-banner" class="streak-banner">⚠️ 2 losses in a row — consider stopping for the day</div>
+  <div class="daily-limit-bar" id="daily-limit-bar">
+    <div class="dlb-label">Daily Loss Limit — <span id="dlb-used">$0</span> of <span id="dlb-max">$25</span></div>
+    <div class="dlb-track"><div class="dlb-fill" id="dlb-fill" style="width:0%"></div></div>
+    <div class="dlb-numbers"><span id="dlb-trades">0 trades today</span><span id="dlb-today-pnl">$0.00</span></div>
+  </div>
+  <div class="journal-stats">
+    <div class="jstat"><div class="jstat-label">Total P&amp;L</div><div class="jstat-val" id="j-total-pnl">$0.00</div></div>
+    <div class="jstat"><div class="jstat-label">Win Rate</div><div class="jstat-val" id="j-winrate">—</div></div>
+    <div class="jstat"><div class="jstat-label">Profit Factor</div><div class="jstat-val" id="j-pf">—</div></div>
+    <div class="jstat"><div class="jstat-label">Avg Win / Loss</div><div class="jstat-val" id="j-avgwl">—</div></div>
+  </div>
+  <div class="journal-section-title">
+    <span>TRADE HISTORY</span>
+    <label class="import-btn" for="csv-import">⬆ Import CSV</label>
+    <input type="file" id="csv-import" accept=".csv" style="display:none" onchange="importCSV(event)"/>
+  </div>
+  <div id="trade-list"><div class="journal-empty">No trades yet.<br/>Import a TradrLedger CSV<br/>or trades will appear here.</div></div>
+</div>
+
 </body>
 </html>
