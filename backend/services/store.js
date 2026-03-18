@@ -13,11 +13,11 @@ class ScanStore {
   }
 
   set(stocks, session) {
-    this.pool      = stocks || [];
+    this.pool      = stocks && stocks.length > 0 ? stocks : this.pool; // keep last good pool if empty
     this.timestamp = new Date();
     this.session   = session || 'unknown';
     this.scanCount++;
-    console.log(`[Store] Updated: ${this.pool.length} stocks | session: ${this.session} | scan #${this.scanCount}`);
+    console.log(`[Store] Scan #${this.scanCount} | ${(stocks||[]).length} new stocks | pool: ${this.pool.length} | session: ${this.session}`);
   }
 
   get() {
