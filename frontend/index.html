@@ -149,6 +149,38 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .dlb-fill.warn{background:var(--gold)}.dlb-fill.danger{background:var(--red)}
 .dlb-numbers{font-family:var(--mono);font-size:10px;color:var(--mid);margin-top:4px;display:flex;justify-content:space-between}
 
+/* ── ADD TRADE MODAL ── */
+#add-trade-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.7);display:none;align-items:flex-end;justify-content:center}
+#add-trade-overlay.open{display:flex}
+#add-trade-modal{
+  background:var(--bg1);border:1px solid var(--border2);border-radius:16px 16px 0 0;
+  padding:20px 16px 32px;width:100%;max-width:480px;
+}
+.atm-title{font-family:var(--head);font-size:18px;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.atm-close{font-size:20px;color:var(--dim);cursor:pointer;padding:4px 8px}
+.atm-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.atm-field{display:flex;flex-direction:column;gap:4px}
+.atm-field.full{grid-column:1/-1}
+.atm-label{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase}
+.atm-input{
+  background:var(--bg2);border:1px solid var(--border);border-radius:8px;
+  padding:10px 12px;font-family:var(--mono);font-size:14px;color:var(--text);
+  width:100%;outline:none;
+}
+.atm-input:focus{border-color:var(--accent)}
+.atm-pnl-preview{
+  background:var(--bg2);border:1px solid var(--border);border-radius:8px;
+  padding:10px 12px;font-family:var(--mono);font-size:14px;color:var(--dim);
+  margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;
+}
+.atm-pnl-preview span{font-size:18px;font-weight:500}
+.atm-submit{
+  width:100%;padding:14px;background:var(--accent);border:none;border-radius:10px;
+  font-family:var(--head);font-size:16px;font-weight:700;color:var(--bg);
+  cursor:pointer;letter-spacing:0.05em;
+}
+.atm-submit:active{opacity:0.8}
+
 /* ── ENTRY ZONE ── */
 .entry-zone{
   background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.2);
@@ -1390,6 +1422,60 @@ function sizerCalc(){
 }
 
 // ─── INIT ────────────────────────────────────────
+// ─── ADD TRADE MODAL ─────────────────────────────────────────
+function openAddTrade() {
+  // Default date to today
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('at-date').value = today;
+  document.getElementById('at-ticker').value = '';
+  document.getElementById('at-entry').value = '';
+  document.getElementById('at-exit').value = '';
+  document.getElementById('at-shares').value = '';
+  document.getElementById('at-pnl-preview').textContent = '—';
+  document.getElementById('at-pnl-preview').style.color = 'var(--dim)';
+  document.getElementById('add-trade-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('at-ticker').focus(), 100);
+}
+
+function closeAddTradeModal() {
+  document.getElementById('add-trade-overlay').classList.remove('open');
+}
+
+function closeAddTrade(e) {
+  if (e.target === document.getElementById('add-trade-overlay')) closeAddTradeModal();
+}
+
+function previewPnl() {
+  const entry  = parseFloat(document.getElementById('at-entry').value) || 0;
+  const exit   = parseFloat(document.getElementById('at-exit').value) || 0;
+  const shares = parseInt(document.getElementById('at-shares').value) || 0;
+  const el     = document.getElementById('at-pnl-preview');
+  if (!entry || !exit || !shares) { el.textContent = '—'; el.style.color = 'var(--dim)'; return; }
+  const pnl = parseFloat(((exit - entry) * shares).toFixed(2));
+  el.textContent = (pnl >= 0 ? '+' : '') + '$' + Math.abs(pnl).toFixed(2);
+  el.style.color = pnl > 0 ? 'var(--green)' : pnl < 0 ? 'var(--red)' : 'var(--dim)';
+}
+
+function submitAddTrade() {
+  const ticker = document.getElementById('at-ticker').value.trim().toUpperCase();
+  const entry  = parseFloat(document.getElementById('at-entry').value);
+  const exit   = parseFloat(document.getElementById('at-exit').value);
+  const shares = parseInt(document.getElementById('at-shares').value);
+  const date   = document.getElementById('at-date').value;
+
+  if (!ticker || !entry || !exit || !shares || !date) {
+    alert('Fill in all fields'); return;
+  }
+
+  const pnl = parseFloat(((exit - entry) * shares).toFixed(2));
+  const id  = 'M' + Date.now();
+
+  journalTrades.unshift({ id, date, symbol: ticker, side: 'Long', qty: shares, entry, exit, pnl, notes: '' });
+  journalSave();
+  renderJournal();
+  closeAddTradeModal();
+}
+
 // ─── PIN PAD ─────────────────────────────────────────────────
 const PIN_KEY = 'sb_auth';
 const PIN_CODE = '1337'; // change this to your preferred PIN
@@ -1625,6 +1711,43 @@ function init(){
 
 init();
 </script>
+<!-- ADD TRADE MODAL -->
+<div id="add-trade-overlay" onclick="closeAddTrade(event)">
+  <div id="add-trade-modal">
+    <div class="atm-title">
+      Add Trade
+      <span class="atm-close" onclick="closeAddTradeModal()">✕</span>
+    </div>
+    <div class="atm-grid">
+      <div class="atm-field full">
+        <div class="atm-label">Ticker</div>
+        <input class="atm-input" id="at-ticker" placeholder="e.g. AAPL" oninput="this.value=this.value.toUpperCase()" autocomplete="off" autocorrect="off" spellcheck="false"/>
+      </div>
+      <div class="atm-field">
+        <div class="atm-label">Entry Price</div>
+        <input class="atm-input" id="at-entry" type="number" step="0.01" placeholder="0.00" oninput="previewPnl()"/>
+      </div>
+      <div class="atm-field">
+        <div class="atm-label">Exit Price</div>
+        <input class="atm-input" id="at-exit" type="number" step="0.01" placeholder="0.00" oninput="previewPnl()"/>
+      </div>
+      <div class="atm-field">
+        <div class="atm-label">Shares</div>
+        <input class="atm-input" id="at-shares" type="number" placeholder="100" oninput="previewPnl()"/>
+      </div>
+      <div class="atm-field">
+        <div class="atm-label">Date</div>
+        <input class="atm-input" id="at-date" type="date"/>
+      </div>
+    </div>
+    <div class="atm-pnl-preview">
+      <span style="font-size:11px;color:var(--dim)">P&amp;L PREVIEW</span>
+      <span id="at-pnl-preview">—</span>
+    </div>
+    <button class="atm-submit" onclick="submitAddTrade()">Save Trade</button>
+  </div>
+</div>
+
 <!-- JOURNAL PAGE -->
 <div id="page-journal">
   <div id="streak-banner" class="streak-banner">⚠️ 2 losses in a row — consider stopping for the day</div>
@@ -1641,8 +1764,11 @@ init();
   </div>
   <div class="journal-section-title">
     <span>TRADE HISTORY</span>
-    <label class="import-btn" for="csv-import">⬆ Import CSV</label>
-    <input type="file" id="csv-import" accept=".csv" style="display:none" onchange="importCSV(event)"/>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button class="import-btn" onclick="openAddTrade()">+ Add</button>
+      <label class="import-btn" for="csv-import">⬆ CSV</label>
+      <input type="file" id="csv-import" accept=".csv" style="display:none" onchange="importCSV(event)"/>
+    </div>
   </div>
   <div id="trade-list"><div class="journal-empty">No trades yet.<br/>Import a TradrLedger CSV<br/>or trades will appear here.</div></div>
 </div>
