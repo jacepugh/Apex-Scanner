@@ -161,8 +161,12 @@ async function runScan() {
 
     const results = await scanner.scan(WIDE_FILTERS);
 
-    if (results && results.length > 0 && !results[0].ticker?.startsWith('DEMO')) {
-      store.set(results, session);
+    const isDemoData = results && results.length > 0 && results[0].ticker?.startsWith('DEMO');
+    // Always update store so scanCount increments — keeps last good pool if empty
+    if (!isDemoData) {
+      store.set(results || [], session);
+    }
+    if (results && results.length > 0 && !isDemoData) {
       broadcast('scan_results', results);
 
       // Alert broadcasts
