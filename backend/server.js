@@ -60,7 +60,8 @@ app.get('/api/pulse/all', (req, res) => {
   res.json(pulseStore);
 });
 
-app.use('/api/pulse', require('./routes/pulse'));
+app.use('/api/pulse',   require('./routes/pulse'));
+app.use('/api/journal', require('./routes/journal'));
 
 app.get('/api/health', (req, res) => {
   res.json({
