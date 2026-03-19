@@ -103,6 +103,21 @@ class ScannerService {
       await this.sleep(200);
     }
     console.log('[Scanner] Background news enrichment complete');
+
+    // Re-sort store after catalyst data is populated
+    const cached = this.cache.get('last_scan');
+    if (cached) {
+      cached.sort((a, b) => {
+        const catA = a.catalyst ? 1 : 0;
+        const catB = b.catalyst ? 1 : 0;
+        if (catB !== catA) return catB - catA;
+        const rotA = a.floatRotation || 0;
+        const rotB = b.floatRotation || 0;
+        if (rotB !== rotA) return rotB - rotA;
+        return b.gapPct - a.gapPct;
+      });
+      this.cache.set('last_scan', cached, 60);
+    }
   }
 
   // ─── POLYGON FULL SNAPSHOT ────────────────────
@@ -245,6 +260,15 @@ class ScannerService {
 
     if (prevClose > 0 && f.gapMin > 0 && gapPct < f.gapMin) return null;
 
+    // ── Sanity filters — catch bad Polygon data ──
+    // Gap over 500% is almost always a data artifact (bad prevClose)
+    if (gapPct > 500) return null;
+    // Negative gap over 80% is also likely bad data
+    if (gapPct < -80) return null;
+    // Minimum dollar volume — filter out phantom moves on zero activity
+    // Even in pre-market, a real setup needs at least $10K in dollar volume
+    if (dollarVolume < 10000 && volume > 0) return null;
+
     // ── Float rotation % — primary pre-market signal ──
     // Polygon snapshot doesn't include float directly — we use shares outstanding
     // from the ticker details if available, otherwise null
@@ -384,14 +408,22 @@ class ScannerService {
   isEtfOrWarrant(ticker) {
     if (!ticker) return true;
     if (ticker.length > 5) return true;
+    // Warrants and rights
     if (/W[Ss]?$/.test(ticker)) return true;
-    const etfs = [
+    if (/R$/.test(ticker) && ticker.length === 5) return true;
+    // Units (common in SPACs post-split)
+    if (/U$/.test(ticker) && ticker.length === 5) return true;
+    // Known ETFs and leveraged funds
+    const etfs = new Set([
       'SPY','QQQ','IWM','GLD','SLV','TLT','HYG','XLE','XLF','XLK',
       'ARKK','ARKG','ARKW','SQQQ','TQQQ','SPXL','SPXU','UVXY','VXX',
       'VIXY','LABD','LABU','SOXL','SOXS','FNGU','FNGD','CURE','NAIL',
       'UPRO','SPXS','TECL','TECS','UDOW','SDOW','TNA','TZA','FAS','FAZ',
-    ];
-    return etfs.includes(ticker.toUpperCase());
+      'BOIL','KOLD','GUSH','DRIP','DUST','JNUG','NUGT','JDST','DGAZ',
+      'UGAZ','UCO','SCO','BITI','BITO','MSTU','MSTX','NVDL','TSLL',
+      'ACTS','DFAC','DFAS','DFAU','DFAX','AVUV','AVLV','AVDV',
+    ]);
+    return etfs.has(ticker.toUpperCase());
   }
 
   detectAlerts(stocks) {
