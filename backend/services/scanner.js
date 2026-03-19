@@ -149,9 +149,14 @@ class ScannerService {
       }
     }
 
-    // Sort by gap tier first, then gap % within tier
+    // Sort: catalyst first, then float rotation, then gap %
     stocks.sort((a, b) => {
-      if (b.gapTier !== a.gapTier) return b.gapTier - a.gapTier;
+      const catA = a.catalyst ? 1 : 0;
+      const catB = b.catalyst ? 1 : 0;
+      if (catB !== catA) return catB - catA;
+      const rotA = a.floatRotation || 0;
+      const rotB = b.floatRotation || 0;
+      if (rotB !== rotA) return rotB - rotA;
       return b.gapPct - a.gapPct;
     });
 
@@ -319,7 +324,21 @@ class ScannerService {
       .map(t => { try { return this.parseTicker(t, session, f); } catch(e) { return null; } })
       .filter(Boolean);
 
-    this.cache.set('poly_gainers', stocks, 20);
+    // Sort: catalyst first, then float rotation, then gap %
+    stocks.sort((a, b) => {
+      const catA = a.catalyst ? 1 : 0;
+      const catB = b.catalyst ? 1 : 0;
+      if (catB !== catA) return catB - catA;
+      const rotA = a.floatRotation || 0;
+      const rotB = b.floatRotation || 0;
+      if (rotB !== rotA) return rotB - rotA;
+      return b.gapPct - a.gapPct;
+    });
+
+    console.log('[Polygon] Gainers after parse:', stocks.length, '| top gap:', stocks[0]?.ticker, stocks[0]?.gapPct + '%');
+
+    const ttl = session === 'premarket' ? 30 : 20;
+    this.cache.set('poly_gainers_' + session, stocks, ttl);
     return stocks;
   }
 
