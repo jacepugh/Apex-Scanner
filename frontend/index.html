@@ -243,6 +243,7 @@ body.pulse-active #page-pulse{display:block}
   border-radius:4px;padding:2px 7px;cursor:pointer;margin-left:2px;
   transition:all 0.15s;flex-shrink:0;
 }
+.card-rh{font-family:var(--mono);font-size:9px;color:var(--green);background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.2);border-radius:5px;padding:3px 7px;cursor:pointer;white-space:nowrap;text-decoration:none}
 .card-sizeit:active{background:rgba(0,212,255,0.15)}
 .card-stats-row{display:flex;gap:10px}
 .card-stat{font-family:var(--mono);font-size:10px;color:var(--mid)}
@@ -1030,6 +1031,8 @@ function patchCardData(cardEl,s){
   }
   const sizeBtn=cardEl.querySelector('.card-sizeit');
   if(sizeBtn)sizeBtn.setAttribute('onclick',`event.stopPropagation();openSizerWithPrice(${s.price})`);
+  const rhBtn=cardEl.querySelector('.card-rh');
+  if(rhBtn)rhBtn.setAttribute('href',`https://robinhood.com/stocks/${s.ticker}`);
 }
 
 function calcEntryZone(s) {
@@ -1118,6 +1121,7 @@ function buildCardHtml(s,i,isNew=false){
           <div class="card-price">$${s.price?s.price.toFixed(2):'—'}</div>
           <div class="card-chg ${(s.change||0)>=0?'pos':'neg'}">${(s.change||0)>=0?'▲':'▼'} ${Math.abs(s.change||0).toFixed(1)}%</div>
           <div class="card-sizeit" onclick="event.stopPropagation();openSizerWithPrice(${s.price})">🧮 Size It</div>
+          <a class="card-rh" href="https://robinhood.com/stocks/${s.ticker}" target="_blank" onclick="event.stopPropagation()">📈 RH</a>
         </div>
         <div class="card-stats-row">
           <div class="card-stat">$VOL <span>${s.dollarVolume>0?fmt(s.dollarVolume):'—'}</span></div>
