@@ -1456,6 +1456,22 @@ function previewPnl() {
   el.style.color = pnl > 0 ? 'var(--green)' : pnl < 0 ? 'var(--red)' : 'var(--dim)';
 }
 
+function exportCSV() {
+  if (!journalTrades.length) { alert('No trades to export'); return; }
+  const headers = 'Position ID,Date,Symbol,Side,Quantity,Entry Price,Exit Price,P&L,Commission,Notes';
+  const rows = journalTrades.map(t =>
+    [t.id, t.date, t.symbol, t.side||'Long', t.qty, t.entry, t.exit, t.pnl, '0.00', t.notes||''].join(',')
+  );
+  const csv  = [headers, ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'scanny_trades_' + new Date().toISOString().split('T')[0] + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function submitAddTrade() {
   const ticker = document.getElementById('at-ticker').value.trim().toUpperCase();
   const entry  = parseFloat(document.getElementById('at-entry').value);
@@ -1533,17 +1549,41 @@ const DAILY_LOSS_LIMIT = 25;
 
 let journalTrades = [];
 
-function journalLoad() {
+async function journalLoad() {
   try {
-    journalTrades = JSON.parse(localStorage.getItem(JOURNAL_KEY) || '[]');
+    // Try backend first — persistent volume
+    const res = await fetch('/api/journal');
+    if (res.ok) {
+      journalTrades = await res.json();
+      // Sync to localStorage as offline cache
+      localStorage.setItem(JOURNAL_KEY, JSON.stringify(journalTrades));
+    } else {
+      throw new Error('Backend unavailable');
+    }
   } catch(e) {
-    journalTrades = [];
+    // Fall back to localStorage
+    try {
+      journalTrades = JSON.parse(localStorage.getItem(JOURNAL_KEY) || '[]');
+    } catch(e2) {
+      journalTrades = [];
+    }
   }
   renderJournal();
 }
 
-function journalSave() {
+async function journalSave() {
+  // Always save to localStorage immediately
   localStorage.setItem(JOURNAL_KEY, JSON.stringify(journalTrades));
+  // Then sync to backend
+  try {
+    await fetch('/api/journal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(journalTrades),
+    });
+  } catch(e) {
+    console.log('[Journal] Backend sync failed — saved locally only');
+  }
 }
 
 function importCSV(event) {
@@ -1768,6 +1808,7 @@ init();
       <button class="import-btn" onclick="openAddTrade()">+ Add</button>
       <label class="import-btn" for="csv-import">⬆ CSV</label>
       <input type="file" id="csv-import" accept=".csv" style="display:none" onchange="importCSV(event)"/>
+      <button class="import-btn" onclick="exportCSV()">⬇ Export</button>
     </div>
   </div>
   <div id="trade-list"><div class="journal-empty">No trades yet.<br/>Import a TradrLedger CSV<br/>or trades will appear here.</div></div>
