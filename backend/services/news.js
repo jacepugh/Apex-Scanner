@@ -1,9 +1,12 @@
 /**
- * NewsService — v3
+ * NewsService — v4
  * - No hard age cutoff — return all articles found
  * - Age filtering handled client-side via news window slider
  * - Polygon → Finnhub → AlphaVantage fallback chain
  * - Catalyst classification per article
+ * - Polygon sentiment pulled from insights[] array
+ *   sentiment: 'positive' | 'negative' | 'neutral'
+ *   sentimentReasoning: string from Polygon
  */
 
 const axios = require('axios');
@@ -37,32 +40,27 @@ const CATALYST_PATTERNS = [
 class NewsService {
   constructor({ cache, apiKey }) {
     this.cache           = cache;
-    this.polygonKey      = process.env.POLYGON_API_KEY      || apiKey || '';
-    this.finnhubKey      = process.env.FINNHUB_API_KEY      || '';
+    this.polygonKey      = process.env.POLYGON_API_KEY       || apiKey || '';
+    this.finnhubKey      = process.env.FINNHUB_API_KEY       || '';
     this.alphaVantageKey = process.env.ALPHA_VANTAGE_API_KEY || '';
-    this.source          = process.env.DATA_SOURCE          || 'demo';
+    this.source          = process.env.DATA_SOURCE           || 'demo';
   }
 
   // ─── MAIN ENTRY POINT ─────────────────────────
-  // Returns ALL articles found — no age filtering here
-  // Age/catalyst filtering is done client-side via news window slider
   async getNewsForTicker(ticker) {
-    const cacheKey = 'news_v3_' + ticker;
+    const cacheKey = 'news_v4_' + ticker;
     const cached   = this.cache.get(cacheKey);
     if (cached) return cached;
 
     let articles = [];
 
     try {
-      // Try Polygon first — fetch last 7 days to cast a wide net
       if (this.polygonKey) {
         articles = await this.fetchPolygonNews(ticker, 7);
       }
-      // Finnhub fallback
       if (!articles.length && this.finnhubKey) {
         articles = await this.fetchFinnhubNews(ticker, 7);
       }
-      // Alpha Vantage last resort
       if (!articles.length && this.alphaVantageKey) {
         articles = await this.fetchAVNews(ticker);
       }
@@ -73,16 +71,12 @@ class NewsService {
 
     console.log(`[News] ${ticker}: ${articles.length} raw articles`);
 
-    // Remove low-quality filler
-    const quality = articles.filter(a => !this.isLowQuality(a));
-
-    // Classify each article
+    const quality    = articles.filter(a => !this.isLowQuality(a));
     const classified = quality.map(a => ({
       ...a,
       catalyst: this.classifyArticle(a),
     }));
 
-    // Sort: catalyst articles first, then by recency
     classified.sort((a, b) => {
       const scoreA = a.catalyst?.score || 0;
       const scoreB = b.catalyst?.score || 0;
@@ -90,15 +84,14 @@ class NewsService {
       return new Date(b.publishedAt) - new Date(a.publishedAt);
     });
 
-    // Return top 5 — no age filter applied here
     const final = classified.slice(0, 5);
-
-    // Cache 10 minutes
     this.cache.set(cacheKey, final, 600);
     return final;
   }
 
   // ─── POLYGON NEWS ─────────────────────────────
+  // insights[] per article contains sentiment per ticker:
+  // { ticker, sentiment: 'positive'|'negative'|'neutral', sentiment_reasoning: string }
   async fetchPolygonNews(ticker, daysBack) {
     const from = new Date();
     from.setDate(from.getDate() - daysBack);
@@ -124,14 +117,24 @@ class NewsService {
     const results = res.data?.results || [];
     console.log('[News/Polygon] ' + ticker + ': ' + results.length + ' articles');
 
-    return results.map(a => ({
-      headline:    a.title             || '',
-      summary:     a.description       || '',
-      source:      a.publisher?.name   || 'Polygon News',
-      url:         a.article_url       || '',
-      publishedAt: a.published_utc     || new Date().toISOString(),
-      timeAgo:     this.timeAgo(a.published_utc),
-    }));
+    return results.map(a => {
+      // Find the insight entry that matches this ticker
+      const insight = (a.insights || []).find(
+        i => i.ticker?.toUpperCase() === ticker.toUpperCase()
+      );
+
+      return {
+        headline:           a.title           || '',
+        summary:            a.description     || '',
+        source:             a.publisher?.name || 'Polygon News',
+        url:                a.article_url     || '',
+        publishedAt:        a.published_utc   || new Date().toISOString(),
+        timeAgo:            this.timeAgo(a.published_utc),
+        // Sentiment fields — undefined if not from Polygon
+        sentiment:          insight?.sentiment           || null,
+        sentimentReasoning: insight?.sentiment_reasoning || null,
+      };
+    });
   }
 
   // ─── FINNHUB NEWS ─────────────────────────────
@@ -156,12 +159,14 @@ class NewsService {
     console.log('[News/Finnhub] ' + ticker + ': ' + results.length + ' articles');
 
     return results.map(a => ({
-      headline:    a.headline || '',
-      summary:     a.summary  || '',
-      source:      a.source   || 'Finnhub',
-      url:         a.url      || '',
-      publishedAt: new Date(a.datetime * 1000).toISOString(),
-      timeAgo:     this.timeAgo(new Date(a.datetime * 1000).toISOString()),
+      headline:           a.headline || '',
+      summary:            a.summary  || '',
+      source:             a.source   || 'Finnhub',
+      url:                a.url      || '',
+      publishedAt:        new Date(a.datetime * 1000).toISOString(),
+      timeAgo:            this.timeAgo(new Date(a.datetime * 1000).toISOString()),
+      sentiment:          null,
+      sentimentReasoning: null,
     }));
   }
 
@@ -184,12 +189,14 @@ class NewsService {
     }
 
     return (res.data?.feed || []).map(a => ({
-      headline:    a.title   || '',
-      summary:     a.summary || '',
-      source:      a.source  || 'Alpha Vantage',
-      url:         a.url     || '',
-      publishedAt: this.parseAVDate(a.time_published),
-      timeAgo:     this.timeAgo(this.parseAVDate(a.time_published)),
+      headline:           a.title   || '',
+      summary:            a.summary || '',
+      source:             a.source  || 'Alpha Vantage',
+      url:                a.url     || '',
+      publishedAt:        this.parseAVDate(a.time_published),
+      timeAgo:            this.timeAgo(this.parseAVDate(a.time_published)),
+      sentiment:          null,
+      sentimentReasoning: null,
     }));
   }
 
@@ -209,7 +216,6 @@ class NewsService {
     return null;
   }
 
-  // Alpha Vantage date format: 20240115T143000
   parseAVDate(str) {
     if (!str) return new Date().toISOString();
     if (/^\d{8}T\d{6}$/.test(str)) {
