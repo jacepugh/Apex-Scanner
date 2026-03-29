@@ -118,7 +118,7 @@ class ScannerService {
       } catch (e) {
         stock.news = []; stock.catalyst = null;
       }
-      await this.sleep(200);
+      // sleep removed — Polygon Starter has no rate limit
     }
     const cached = this.cache.get('last_scan');
     if (cached) { cached.sort(SORT_FN); this.cache.set('last_scan', cached, 60); }
@@ -129,7 +129,8 @@ class ScannerService {
     const needFloat = stocks.filter(s => !s.float);
     if (!needFloat.length) return;
     console.log('[Scanner] Float enrichment: fetching', needFloat.length, 'tickers');
-    for (const stock of needFloat) {
+
+    await Promise.all(needFloat.map(async (stock) => {
       try {
         const cacheKey = 'float_' + stock.ticker;
         const cached   = this.cache.get(cacheKey);
@@ -151,8 +152,8 @@ class ScannerService {
           stock.floatRotation = parseFloat(((stock.volume / stock.float) * 100).toFixed(2));
         }
       } catch(e) { /* leave null */ }
-      await this.sleep(150);
-    }
+    }));
+
     const cached = this.cache.get('last_scan');
     if (cached) { cached.sort(SORT_FN); this.cache.set('last_scan', cached, 60); }
     console.log('[Scanner] Float enrichment complete');
@@ -433,8 +434,6 @@ class ScannerService {
     this.cache.set('fhq_' + ticker, result, 15);
     return result;
   }
-
-  sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 }
 
 module.exports = { ScannerService };
