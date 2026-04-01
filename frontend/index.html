@@ -3,14 +3,13 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="theme-color" content="#080b10"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="theme-color" content="#080b10"/>
+<meta name="apple-mobile-web-app-title" content="Scanny Boi"/>
+<meta name="mobile-web-app-capable" content="yes"/>
 <title>SCANNY BOI</title>
 <link rel="manifest" href="/manifest.json"/>
-<meta name="mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-title" content="Scanny Boi"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Rajdhani:wght@500;600;700&family=Bebas+Neue&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
 :root {
@@ -188,21 +187,14 @@ body.pulse-active #page-pulse{display:block}
 .card-cat-row{margin-top:2px}
 
 /* ── CATALYST CHIPS ── */
-/* PATCHED: inline-flex so the sentiment dot sits inline with the label */
 .catalyst-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:4px;font-family:var(--mono);font-size:9px;letter-spacing:0.06em;font-weight:500;text-transform:uppercase}
-
-/* sentiment dot */
 .chip-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .chip-dot.dot-positive{background:var(--green)}
 .chip-dot.dot-negative{background:var(--red)}
 .chip-dot.dot-neutral{background:var(--gold)}
 .chip-dot.dot-unknown{background:var(--dim)}
-
-/* sentiment glow on chip border */
 .catalyst-chip.sent-positive{box-shadow:0 0 6px rgba(0,230,118,0.25);border-color:rgba(0,230,118,0.5)!important}
 .catalyst-chip.sent-negative{box-shadow:0 0 6px rgba(255,64,96,0.25);border-color:rgba(255,64,96,0.5)!important}
-
-/* catalyst type colors */
 .cat-earnings{background:rgba(192,132,252,0.12);color:var(--purple);border:1px solid rgba(192,132,252,0.25)}
 .cat-fda{background:rgba(0,230,118,0.10);color:var(--green);border:1px solid rgba(0,230,118,0.2)}
 .cat-contract{background:rgba(0,212,255,0.08);color:var(--accent);border:1px solid rgba(0,212,255,0.18)}
@@ -210,24 +202,24 @@ body.pulse-active #page-pulse{display:block}
 .cat-ma{background:rgba(255,64,96,0.08);color:var(--red);border:1px solid rgba(255,64,96,0.18)}
 .cat-partner{background:rgba(0,153,187,0.08);color:#00b8d9;border:1px solid rgba(0,153,187,0.2)}
 .no-catalyst{background:rgba(58,85,112,0.15);color:var(--dim);border:1px solid rgba(58,85,112,0.3)}
-
-/* news card left accent stripe by sentiment */
 .news-card.sent-positive{border-left:2px solid var(--green)}
 .news-card.sent-negative{border-left:2px solid var(--red)}
 .news-card.sent-neutral{border-left:2px solid var(--gold)}
-
-/* inline sentiment badge in news card meta row */
 .news-sentiment-badge{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:8px;letter-spacing:0.08em;text-transform:uppercase;padding:2px 6px;border-radius:3px}
 .nsb-positive{background:rgba(0,230,118,0.12);color:var(--green);border:1px solid rgba(0,230,118,0.25)}
 .nsb-negative{background:rgba(255,64,96,0.12);color:var(--red);border:1px solid rgba(255,64,96,0.25)}
 .nsb-neutral{background:rgba(255,204,0,0.08);color:var(--gold);border:1px solid rgba(255,204,0,0.2)}
-
 .card-right{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
 .card-gap{font-family:var(--head);font-weight:700;font-size:20px;color:var(--green);line-height:1}
 .card-gap.neg{color:var(--red)}.card-gap.tier2{color:var(--green)}.card-gap.tier3{color:var(--gold);text-shadow:0 0 8px rgba(255,204,0,0.4)}
 .pmh-tag{font-family:var(--mono);font-size:9px;color:var(--gold)}
 .card-pin{font-size:14px;cursor:pointer;opacity:0.4;transition:opacity 0.15s;line-height:1;padding:2px}
 .card-pin.pinned{opacity:1}.card-pin:active{transform:scale(1.3)}
+
+/* ── PRICE STALENESS (Phase 0) ── */
+.price-stale-chip{display:inline-flex;align-items:center;gap:3px;font-family:var(--mono);font-size:8px;letter-spacing:0.08em;text-transform:uppercase;padding:2px 6px;border-radius:3px;background:rgba(255,204,0,0.08);color:var(--gold);border:1px solid rgba(255,204,0,0.2);}
+.stock-card.price-stale{opacity:0.65}
+.stock-card.price-stale .card-price{color:var(--gold)}
 
 /* ── CARD DETAIL ── */
 .card-detail{display:none;padding:0 14px 14px;border-top:1px solid var(--border);animation:expandIn 0.2s ease}
@@ -323,8 +315,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .toggle-sw.on{background:var(--accent);border-color:var(--accent)}
 .toggle-sw::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--dim);transition:all 0.2s}
 .toggle-sw.on::after{left:22px;background:var(--bg)}
-
-/* ── NEWS WINDOW PILLS ── */
 .news-window-pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .nw-pill{padding:7px 14px;border-radius:20px;background:var(--bg2);border:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--mid);cursor:pointer;transition:all 0.15s}
 .nw-pill.active{background:rgba(0,212,255,0.1);border-color:var(--accent);color:var(--accent)}
@@ -348,9 +338,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .rate-pill{padding:6px 14px;border-radius:20px;background:var(--bg2);border:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--mid);cursor:pointer;transition:all 0.15s}
 .rate-pill.active{background:rgba(0,212,255,0.1);border-color:var(--accent);color:var(--accent)}
 
-/* ══════════════════════════════════════
-   POSITION SIZER
-══════════════════════════════════════ */
+/* ── POSITION SIZER ── */
 .sizer-wrap{padding:16px 16px calc(20px + var(--safe-bot))}
 .sizer-account-card{background:var(--bg1);border:1px solid var(--border2);border-radius:14px;padding:16px;margin-bottom:14px;}
 .sizer-account-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
@@ -413,6 +401,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 </style>
 </head>
 <body>
+
 <!-- PIN SCREEN -->
 <div id="pin-screen">
   <div class="pin-logo">SCANNY <span>BOI</span></div>
@@ -437,10 +426,20 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     <button class="pin-btn del" onclick="pinDel()">⌫</button>
   </div>
 </div>
+
+<!-- ERROR BANNER (dev tool — remove in production) -->
 <div id="errbanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#ff4060;color:#fff;font-family:monospace;font-size:11px;padding:8px 12px;white-space:pre-wrap;word-break:break-all;max-height:40vh;overflow-y:auto"></div>
 <script>
-window.onerror=function(msg,src,line,col,err){var b=document.getElementById('errbanner');b.style.display='block';b.textContent+='❌ '+msg+'\n   at '+(src||'').split('/').pop()+':'+line+'\n\n';};
-window.addEventListener('unhandledrejection',function(e){var b=document.getElementById('errbanner');b.style.display='block';b.textContent+='⚠️ '+(e.reason?.message||e.reason||'Promise rejected')+'\n\n';});
+window.onerror = function(msg,src,line,col,err) {
+  var b = document.getElementById('errbanner');
+  b.style.display = 'block';
+  b.textContent += '❌ ' + msg + '\n   at ' + (src||'').split('/').pop() + ':' + line + '\n\n';
+};
+window.addEventListener('unhandledrejection', function(e) {
+  var b = document.getElementById('errbanner');
+  b.style.display = 'block';
+  b.textContent += '⚠️ ' + (e.reason?.message || e.reason || 'Promise rejected') + '\n\n';
+});
 </script>
 
 <!-- HEADER -->
@@ -620,12 +619,12 @@ window.addEventListener('unhandledrejection',function(e){var b=document.getEleme
   <div class="drawer-section">
     <div class="ds-label">Float</div>
     <div class="filter-item">
-      <div class="fi-header"><div class="fi-label">Maximum Float</div><div class="fi-val" id="fv-float">500M</div></div>
-      <input type="range" id="f-float" min="1000000" max="500000000" step="1000000" value="500000000" oninput="updateSliderDisplay('float')"/>
+      <div class="fi-header"><div class="fi-label">Maximum Float</div><div class="fi-val" id="fv-float">50M</div></div>
+      <input type="range" id="f-float" min="1000000" max="500000000" step="1000000" value="50000000" oninput="updateSliderDisplay('float')"/>
     </div>
   </div>
   <div class="drawer-section">
-    <div class="ds-label">News Window — catalyst chip only shows if news within this window</div>
+    <div class="ds-label">News Window — catalyst chip only shows if news is within this window</div>
     <div class="news-window-pills" id="news-window-pills">
       <div class="nw-pill" onclick="setNewsWindow(6,this)">6h</div>
       <div class="nw-pill" onclick="setNewsWindow(12,this)">12h</div>
@@ -664,7 +663,7 @@ window.addEventListener('unhandledrejection',function(e){var b=document.getEleme
       </div>
     </div>
     <div class="settings-section">
-      <div class="ds-label">Refresh Rate</div>
+      <div class="ds-label">Discovery Refresh Rate</div>
       <div class="rate-pills" id="rate-pills">
         <div class="rate-pill" onclick="setRefreshRate(8000)">8s</div>
         <div class="rate-pill" onclick="setRefreshRate(15000)">15s</div>
@@ -684,31 +683,61 @@ window.addEventListener('unhandledrejection',function(e){var b=document.getEleme
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════
-// SCANNY BOI — sentiment-aware catalyst chips
-// ═══════════════════════════════════════════════════
+'use strict';
 
-const BACKEND    = '';
-const WS_BACKEND = 'wss://apex-scanner-production.up.railway.app';
-const CAT_COLORS = {fda:'#00e676',earnings:'#c084fc',contract:'#00d4ff',ma:'#ff4060',partner:'#00b8d9',sec:'#ffcc00'};
+// ─── CONSTANTS ───────────────────────────────────────────────────────────────
+
+const BACKEND = '';
+
+// Derive WebSocket URL from current host so this works on any domain/Railway URL
+// without hardcoding. Falls back to wss for https, ws for http.
+const WS_BACKEND = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host;
+
+// Catalyst type → dot color (matches CSS cat-* classes)
+const CAT_COLORS = {
+  fda:      '#00e676',
+  earnings: '#c084fc',
+  contract: '#00d4ff',
+  ma:       '#ff4060',
+  partner:  '#00b8d9',
+  sec:      '#ffcc00',
+};
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
 
 const STATE = {
-  stocks:[],filtered:[],expanded:new Set(),currentPage:'scanner',
-  isLive:false,refreshRate:30000,refreshInterval:null,renderedTickers:[],
-  newsWindowHours:24,pulseData:{},polygonKey:'',
-  filters:{priceMin:0.5,priceMax:25,dollarVolMin:0,floatRotMin:0,gapMin:5,floatMax:50000000,catalyst:false,excludeEtf:true},
-  presets:{
-    ignition: {priceMin:1,   priceMax:20, dollarVolMin:500000, floatRotMin:15, gapMin:10, floatMax:10000000},
-    premarket:{priceMin:0.5, priceMax:25, dollarVolMin:150000, floatRotMin:5,  gapMin:5,  floatMax:50000000},
-    midday:   {priceMin:2,   priceMax:25, dollarVolMin:250000, floatRotMin:0,  gapMin:3,  floatMax:100000000},
+  stocks:          [],
+  filtered:        [],
+  expanded:        new Set(),
+  currentPage:     'scanner',
+  isLive:          false,
+  refreshRate:     30000,       // discovery scan poll rate (fallback to REST)
+  refreshTimer:    null,        // handle for discovery setInterval
+  renderedTickers: [],
+  newsWindowHours: 24,
+  filters: {
+    priceMin:    0.5,
+    priceMax:    25,
+    dollarVolMin: 0,
+    floatRotMin: 0,
+    gapMin:      5,
+    floatMax:    50_000_000,
+    catalyst:    false,
+    excludeEtf:  true,
+  },
+  presets: {
+    ignition:  { priceMin:1,   priceMax:20, dollarVolMin:500000, floatRotMin:15, gapMin:10, floatMax:10_000_000  },
+    premarket: { priceMin:0.5, priceMax:25, dollarVolMin:150000, floatRotMin:5,  gapMin:5,  floatMax:50_000_000  },
+    midday:    { priceMin:2,   priceMax:25, dollarVolMin:250000, floatRotMin:0,  gapMin:3,  floatMax:100_000_000 },
   },
 };
 
-// ─── SENTIMENT HELPERS ────────────────────────────
+// ─── SENTIMENT HELPERS ───────────────────────────────────────────────────────
+
 // Returns dominant sentiment across recent news for a stock.
-// 'negative' is flagged even if mixed — protects against fade traps.
+// 'negative' wins even when mixed — protects against fade traps.
 function getStockSentiment(s) {
-  if (!s.news || !s.news.length) return null;
+  if (!s.news?.length) return null;
   const sentiments = s.news
     .filter(n => isNewsRecent(n.publishedAt) && n.sentiment)
     .map(n => n.sentiment);
@@ -719,15 +748,13 @@ function getStockSentiment(s) {
 }
 
 function sentimentMeta(sent) {
-  if (sent === 'positive') return {emoji:'▲', cls:'nsb-positive', dotCls:'dot-positive', chipCls:'sent-positive'};
-  if (sent === 'negative') return {emoji:'▼', cls:'nsb-negative', dotCls:'dot-negative', chipCls:'sent-negative'};
-  if (sent === 'neutral')  return {emoji:'◆', cls:'nsb-neutral',  dotCls:'dot-neutral',  chipCls:'sent-neutral'};
-  return {emoji:'·', cls:'', dotCls:'dot-unknown', chipCls:''};
+  if (sent === 'positive') return { emoji:'▲', cls:'nsb-positive', dotCls:'dot-positive', chipCls:'sent-positive' };
+  if (sent === 'negative') return { emoji:'▼', cls:'nsb-negative', dotCls:'dot-negative', chipCls:'sent-negative' };
+  if (sent === 'neutral')  return { emoji:'◆', cls:'nsb-neutral',  dotCls:'dot-neutral',  chipCls:'sent-neutral'  };
+  return { emoji:'·', cls:'', dotCls:'dot-unknown', chipCls:'' };
 }
 
-// Builds catalyst chip with a sentiment dot.
-// Dot color: green=positive, red=negative, gold=neutral, dim=no data.
-// Chip border glows when Polygon sentiment is present.
+// Builds catalyst chip HTML with sentiment dot and optional glow border.
 function buildCatChipHtml(s) {
   const cat = getEffectiveCatalyst(s);
   const sm  = sentimentMeta(getStockSentiment(s));
@@ -737,24 +764,55 @@ function buildCatChipHtml(s) {
   return `<span class="catalyst-chip ${cat.class} ${sm.chipCls}"><span class="chip-dot ${sm.dotCls}"></span>${cat.label}</span>`;
 }
 
-// ─── PULSE ───────────────────────────────────────
-const PULSE_TICKERS = [
-  {sym:'SPY', poly:'SPY',      name:'S&P 500 ETF'},
-  {sym:'QQQ', poly:'QQQ',      name:'NASDAQ ETF'},
-  {sym:'IWM', poly:'IWM',      name:'Small Cap ETF'},
-  {sym:'VIX', poly:'I:VIX',    name:'Volatility Index'},
-  {sym:'XBI', poly:'XBI',      name:'Biotech ETF'},
-  {sym:'BTC', poly:'X:BTCUSD', name:'Bitcoin'},
-];
+// ─── FORMAT HELPERS ──────────────────────────────────────────────────────────
+
+function fmt(n) {
+  if (!n && n !== 0) return '—';
+  if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
+  return String(n);
+}
+
+function fmtDollar(n) { return '$' + n.toFixed(2); }
+
+// ─── NEWS WINDOW ─────────────────────────────────────────────────────────────
+
+function setNewsWindow(hours, el) {
+  STATE.newsWindowHours = hours;
+  document.querySelectorAll('.nw-pill').forEach(p => p.classList.remove('active'));
+  if (el) el.classList.add('active');
+  applyFilters();
+}
+
+function isNewsRecent(publishedAt) {
+  if (!STATE.newsWindowHours) return true;
+  if (!publishedAt) return false;
+  return (Date.now() - new Date(publishedAt).getTime()) / 3_600_000 <= STATE.newsWindowHours;
+}
+
+function getEffectiveCatalyst(s) {
+  if (!s.news?.length) return s.catalyst || null;
+  const fresh = s.news.find(n => isNewsRecent(n.publishedAt));
+  if (!fresh) return null;
+  return s.catalyst || null;
+}
+
+// ─── PULSE ───────────────────────────────────────────────────────────────────
 
 async function fetchPulse() {
   const updEl = document.getElementById('pulse-updated');
   if (updEl) updEl.textContent = 'Updating...';
   try {
-    const res  = await fetch(BACKEND.replace(/\/$/, '') + '/api/pulse/all');
-    const all  = await res.json();
-    PULSE_TICKERS.forEach(t => { try { const d = all[t.sym]; if (d && d.price > 0) renderPulseTile(t.sym, d); } catch(e){} });
-    const ts = new Date().toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+    const res = await fetch('/api/pulse/all');
+    const all = await res.json();
+    // Render whatever symbols the server returns — no hardcoded list needed
+    Object.keys(all).forEach(sym => {
+      try { const d = all[sym]; if (d?.price > 0) renderPulseTile(sym, d); } catch(e) {}
+    });
+    const ts = new Date().toLocaleTimeString('en-US', {
+      timeZone:'America/New_York', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false
+    });
     if (updEl) updEl.textContent = 'Updated ' + ts + ' ET — tap to refresh';
   } catch(e) {
     if (updEl) updEl.textContent = 'Error: ' + e.message + ' — tap to retry';
@@ -769,44 +827,31 @@ function renderPulseTile(sym, d) {
   const isVix = sym === 'VIX';
   const tileUp = isVix ? !isUp : isUp;
   tile.className = 'pulse-tile ' + (tileUp ? 'up' : 'down') + (isVix && d.price >= 20 ? ' warn' : '');
-  tile.querySelector('.pt-price').textContent = sym === 'BTC' ? '$' + Math.round(d.price).toLocaleString() : '$' + (d.price||0).toFixed(2);
+  tile.querySelector('.pt-price').textContent = sym === 'BTC'
+    ? '$' + Math.round(d.price).toLocaleString()
+    : '$' + (d.price || 0).toFixed(2);
   tile.querySelector('.pt-price').classList.remove('pt-loading');
   const chgEl = tile.querySelector('.pt-chg');
-  chgEl.textContent = (isUp ? '▲' : '▼') + ' ' + Math.abs(d.chgPct||0).toFixed(2) + '%';
+  chgEl.textContent = (isUp ? '▲' : '▼') + ' ' + Math.abs(d.chgPct || 0).toFixed(2) + '%';
   chgEl.className = 'pt-chg ' + (isVix ? (isUp ? 'warn' : 'pos') : (isUp ? 'pos' : 'neg'));
-  if (isVix) { const w = document.getElementById('vix-warn'); if (w) w.classList.toggle('show', d.price >= 25); }
+  if (isVix) {
+    const w = document.getElementById('vix-warn');
+    if (w) w.classList.toggle('show', d.price >= 25);
+  }
 }
 
-// ─── FORMAT HELPERS ──────────────────────────────
-function fmt(n){if(!n&&n!==0)return'—';if(n>=1e9)return(n/1e9).toFixed(1)+'B';if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1e3)return(n/1e3).toFixed(0)+'K';return String(n);}
-function fmtDollar(n,d=2){return'$'+n.toFixed(d)}
+// ─── PAGE ROUTING ─────────────────────────────────────────────────────────────
 
-// ─── NEWS WINDOW ─────────────────────────────────
-function setNewsWindow(hours, el) {
-  STATE.newsWindowHours = hours;
-  document.querySelectorAll('.nw-pill').forEach(p => p.classList.remove('active'));
-  if (el) el.classList.add('active');
-  applyFilters();
-}
-function isNewsRecent(publishedAt) {
-  if (!STATE.newsWindowHours) return true;
-  if (!publishedAt) return false;
-  return (Date.now() - new Date(publishedAt).getTime()) / 3600000 <= STATE.newsWindowHours;
-}
-function getEffectiveCatalyst(s) {
-  if (!s.news || !s.news.length) return s.catalyst || null;
-  const fresh = s.news.find(n => isNewsRecent(n.publishedAt));
-  if (!fresh) return null;
-  return s.catalyst || null;
-}
-
-// ─── PAGE ROUTING ────────────────────────────────
 function showPage(page) {
   STATE.currentPage = page;
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('nav-' + page)?.classList.add('active');
-  ['page-scanner','page-pulse','page-sizer','page-journal'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
-  document.body.classList.remove('sizer-active','pulse-active');
+  ['page-scanner','page-pulse','page-sizer','page-journal'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  document.body.classList.remove('sizer-active', 'pulse-active');
+
   if (page === 'sizer') {
     document.body.classList.add('sizer-active');
     document.getElementById('page-sizer').style.display = 'block';
@@ -819,39 +864,91 @@ function showPage(page) {
     renderJournal();
   } else {
     document.getElementById('page-scanner').style.display = 'block';
-    if (page === 'scanner') manualRefresh();
+    // Only fetch if data is older than 60s — avoid hammering on every tab switch
+    const age = store_lastFetchTime ? Date.now() - store_lastFetchTime : Infinity;
+    if (age > 60_000) manualRefresh();
   }
 }
 
-// ─── FILTERS ─────────────────────────────────────
+// Tracks last fetch time to debounce tab-switch refetches
+let store_lastFetchTime = null;
+
+// ─── FILTERS ─────────────────────────────────────────────────────────────────
+
 function applyFilters() {
   const f = STATE.filters;
   STATE.filtered = STATE.stocks.filter(s => {
     if (!s.price || s.price < f.priceMin || s.price > f.priceMax) return false;
     if (f.dollarVolMin > 0 && s.dollarVolume > 0 && s.dollarVolume < f.dollarVolMin) return false;
-    if (f.floatRotMin > 0 && s.floatRotation !== null && s.floatRotation !== undefined && s.floatRotation < f.floatRotMin) return false;
-    if (s.gapPct > 0 && s.gapPct < f.gapMin) return false;
+    if (f.floatRotMin > 0 && s.floatRotation != null && s.floatRotation < f.floatRotMin) return false;
+    // Phase 0 fix: only enforce gapMin when prevClose is known.
+    // When prevClose=0 we have no baseline — skip the check rather than drop the ticker.
+    if (f.gapMin > 0 && s.prevClose > 0 && s.gapPct < f.gapMin) return false;
     if (s.float && s.float > f.floatMax) return false;
     if (f.catalyst && !getEffectiveCatalyst(s)) return false;
     return true;
   });
-  STATE.filtered.sort((a,b) => { const ta=a.gapTier||0,tb=b.gapTier||0; if(tb!==ta)return tb-ta; return b.gapPct-a.gapPct; });
+  STATE.filtered.sort((a, b) => {
+    const ta = a.gapTier || 0, tb = b.gapTier || 0;
+    if (tb !== ta) return tb - ta;
+    return b.gapPct - a.gapPct;
+  });
   document.getElementById('stat-matches').textContent = STATE.filtered.length;
   const top = STATE.filtered[0];
-  document.getElementById('stat-topgap').textContent = top ? top.ticker + ' +' + top.gapPct.toFixed(1) + '%' : '—';
+  document.getElementById('stat-topgap').textContent = top
+    ? top.ticker + ' +' + top.gapPct.toFixed(1) + '%'
+    : '—';
   patchCards();
 }
 
-// ─── CARD PATCHING ───────────────────────────────
+// ─── CARD META HELPER ────────────────────────────────────────────────────────
+// Shared between buildCardHtml and patchCardData to avoid duplicating logic.
+
+function getCardMeta(s) {
+  const floatM   = s.float ? s.float / 1e6 : null;
+  const isUltra  = floatM && floatM < 10;
+  const isLow    = floatM && floatM < 20;
+  const gapTier  = s.gapTier || 0;
+  return {
+    floatM,
+    isUltra,
+    isLow,
+    gapTier,
+    tickCls:    isUltra ? 'ultra-float' : isLow ? 'low-float' : '',
+    gapTierCls: gapTier >= 3 ? 'tier3' : gapTier >= 2 ? 'tier2' : '',
+    frotCls:    s.floatRotation >= 25 ? 'hig' : s.floatRotation >= 10 ? 'hi' : '',
+    floatTag:   isUltra
+      ? '<div class="card-float-tag uf">★ ULTRA LOW FLOAT</div>'
+      : isLow
+        ? '<div class="card-float-tag lf">LOW FLOAT</div>'
+        : floatM
+          ? `<div class="card-float-tag">${floatM.toFixed(1)}M float</div>`
+          : '',
+  };
+}
+
+// ─── CARD PATCHING ───────────────────────────────────────────────────────────
+
 function patchCards() {
   const list  = document.getElementById('stock-list');
   const empty = document.getElementById('empty-state');
-  if (!STATE.filtered.length) { list.innerHTML = ''; STATE.renderedTickers = []; empty.style.display = 'flex'; return; }
+  if (!STATE.filtered.length) {
+    list.innerHTML = '';
+    STATE.renderedTickers = [];
+    empty.style.display = 'flex';
+    return;
+  }
   empty.style.display = 'none';
   const newTickers = STATE.filtered.map(s => s.ticker);
-  STATE.renderedTickers.forEach(t => { if (!newTickers.includes(t)) { const el = document.getElementById('card-' + t); if (el) el.remove(); } });
+
+  // Remove cards no longer in filtered list
+  STATE.renderedTickers.forEach(t => {
+    if (!newTickers.includes(t)) document.getElementById('card-' + t)?.remove();
+  });
+
+  // Insert new cards / update existing ones in correct order
   newTickers.forEach((ticker, i) => {
-    const s = STATE.filtered[i];
+    const s        = STATE.filtered[i];
     const existing = document.getElementById('card-' + ticker);
     if (!existing) {
       const tmp = document.createElement('div');
@@ -862,165 +959,215 @@ function patchCards() {
     } else {
       patchCardData(existing, s);
       const cur = Array.from(list.children).indexOf(existing);
-      if (cur !== i) { const ref = list.children[i]; if (ref && ref !== existing) list.insertBefore(existing, ref); else if (!ref) list.appendChild(existing); }
+      if (cur !== i) {
+        const ref = list.children[i];
+        if (ref && ref !== existing) list.insertBefore(existing, ref);
+        else if (!ref) list.appendChild(existing);
+      }
     }
   });
+
   STATE.renderedTickers = newTickers;
-  const ts = new Date().toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+  updateTimestamp();
+}
+
+function updateTimestamp() {
+  const ts = new Date().toLocaleTimeString('en-US', {
+    timeZone:'America/New_York', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false
+  });
   document.getElementById('last-updated').textContent = 'Last updated ' + ts + ' ET';
   document.getElementById('stat-updated').textContent = ts;
 }
 
 function patchCardData(cardEl, s) {
+  const { gapTier, gapTierCls, frotCls } = getCardMeta(s);
+
+  // Phase 0: staleness — dim card and tint price gold when lastTrade is stale
+  cardEl.classList.toggle('price-stale', !!s.priceStale);
+
   const priceEl = cardEl.querySelector('.card-price');
-  if (priceEl) priceEl.textContent = '$' + (s.price ? s.price.toFixed(2) : '—');
+  if (priceEl) {
+    priceEl.textContent = '$' + (s.price ? s.price.toFixed(2) : '—');
+    // Remove old staleness chip then re-add if still stale
+    cardEl.querySelector('.price-stale-chip')?.remove();
+    if (s.priceStale) {
+      const chip = document.createElement('span');
+      chip.className = 'price-stale-chip';
+      chip.textContent = '⏱ stale';
+      priceEl.parentNode.insertBefore(chip, priceEl.nextSibling);
+    }
+  }
+
   const chgEl = cardEl.querySelector('.card-chg');
-  if (chgEl) { chgEl.textContent = ((s.change||0) >= 0 ? '▲' : '▼') + ' ' + Math.abs(s.change||0).toFixed(1) + '%'; chgEl.className = 'card-chg ' + ((s.change||0) >= 0 ? 'pos' : 'neg'); }
+  if (chgEl) {
+    chgEl.textContent = ((s.change || 0) >= 0 ? '▲' : '▼') + ' ' + Math.abs(s.change || 0).toFixed(1) + '%';
+    chgEl.className = 'card-chg ' + ((s.change || 0) >= 0 ? 'pos' : 'neg');
+  }
+
   const gapEl = cardEl.querySelector('.card-gap');
-  if (gapEl) { const t = s.gapTier||0; gapEl.textContent = '+' + (s.gapPct||0).toFixed(1) + '%'; gapEl.className = 'card-gap ' + ((s.gapPct||0) < 0 ? 'neg' : t >= 3 ? 'tier3' : t >= 2 ? 'tier2' : ''); }
+  if (gapEl) {
+    gapEl.textContent = '+' + (s.gapPct || 0).toFixed(1) + '%';
+    gapEl.className = 'card-gap ' + ((s.gapPct || 0) < 0 ? 'neg' : gapTierCls);
+  }
+
   const stats = cardEl.querySelectorAll('.card-stat span');
   if (stats[0]) stats[0].textContent = s.dollarVolume > 0 ? fmt(s.dollarVolume) : '—';
-  if (stats[1]) { stats[1].textContent = (s.floatRotation !== null && s.floatRotation !== undefined) ? s.floatRotation.toFixed(1) + '%' : '—'; stats[1].className = s.floatRotation >= 25 ? 'hig' : s.floatRotation >= 10 ? 'hi' : ''; }
-  // PATCHED: use buildCatChipHtml for sentiment-aware chip
+  if (stats[1]) {
+    stats[1].textContent = s.floatRotation != null ? s.floatRotation.toFixed(1) + '%' : '—';
+    stats[1].className = frotCls;
+  }
+
   const catRow = cardEl.querySelector('.card-cat-row');
   if (catRow) catRow.innerHTML = buildCatChipHtml(s);
-  const sizeBtn = cardEl.querySelector('.card-sizeit');
-  if (sizeBtn) sizeBtn.setAttribute('onclick', `event.stopPropagation();openSizerWithPrice(${s.price})`);
-  const rhBtn = cardEl.querySelector('.card-rh');
-  if (rhBtn) rhBtn.setAttribute('href', `https://robinhood.com/stocks/${s.ticker}`);
+
+  cardEl.querySelector('.card-sizeit')?.setAttribute('onclick', `event.stopPropagation();openSizerWithPrice(${s.price})`);
+  cardEl.querySelector('.card-rh')?.setAttribute('href', `https://robinhood.com/stocks/${s.ticker}`);
 }
+
+// ─── ENTRY ZONE ──────────────────────────────────────────────────────────────
+// Hardcoded PM High Reclaim pattern — Phase 3 will replace this with a
+// named ENTRY_PATTERNS registry supporting ORB Breakout and VWAP Reclaim.
+// Constants: 0.97 = 3% below PMH (entry low), 1.002 = 0.2% above PMH (entry trigger)
 
 function calcEntryZone(s) {
   if (!s.pmHigh || !s.prevClose || s.pmHigh <= 0 || s.prevClose <= 0) return null;
-  const pmHigh    = s.pmHigh;
   const pmLow     = s.pmLow || s.prevClose;
-  const entryLow  = parseFloat((pmHigh * 0.97).toFixed(2));
-  const entryHigh = parseFloat((pmHigh * 1.002).toFixed(2));
-  const stop      = Math.max(parseFloat((pmLow * 0.99).toFixed(2)), parseFloat((entryLow * 0.97).toFixed(2)));
+  const entryLow  = parseFloat((s.pmHigh * 0.97).toFixed(2));
+  const entryHigh = parseFloat((s.pmHigh * 1.002).toFixed(2));
+  const stop      = Math.max(
+    parseFloat((pmLow * 0.99).toFixed(2)),
+    parseFloat((entryLow * 0.97).toFixed(2))
+  );
   if (stop >= entryLow) return null;
   const risk   = entryHigh - stop;
   const target = parseFloat((entryHigh + risk * 2).toFixed(2));
-  return {entryLow, entryHigh, stop, target, rr:'2:1'};
+  return { entryLow, entryHigh, stop, target, rr: '2:1' };
 }
 
-function buildCardHtml(s, i, isNew=false) {
-  const floatM   = s.float ? s.float / 1e6 : null;
-  const isUltra  = floatM && floatM < 10, isLow = floatM && floatM < 20;
-  const tickCls  = isUltra ? 'ultra-float' : isLow ? 'low-float' : '';
-  const floatTag = isUltra ? '<div class="card-float-tag uf">★ ULTRA LOW FLOAT</div>' : isLow ? '<div class="card-float-tag lf">LOW FLOAT</div>' : floatM ? '<div class="card-float-tag">' + floatM.toFixed(1) + 'M float</div>' : '';
-  const frotCls  = s.floatRotation >= 25 ? 'hig' : s.floatRotation >= 10 ? 'hi' : '';
-  const gapTier  = s.gapTier || 0;
-  const gapTierCls = gapTier >= 3 ? 'tier3' : gapTier >= 2 ? 'tier2' : '';
-  const isOpen   = STATE.expanded.has(s.ticker);
-  const isPmh    = s.abovePmh || s.breakingPmh;
-  // PATCHED: use buildCatChipHtml for sentiment dot + glow
-  const catChip  = buildCatChipHtml(s);
-  const newsHtml = buildNewsHtml(s);
-  const floatM2  = s.float ? s.float / 1e6 : null;
+// ─── CARD HTML ───────────────────────────────────────────────────────────────
+
+function buildCardHtml(s, i, isNew = false) {
+  const { tickCls, floatTag, frotCls, gapTierCls, gapTier, floatM } = getCardMeta(s);
+  const isPmh   = s.abovePmh || s.breakingPmh;
+  const isOpen  = STATE.expanded.has(s.ticker);
+  const catChip = buildCatChipHtml(s);
+  const ez      = calcEntryZone(s);
+
+  const entryZoneHtml = ez ? `
+    <div class="entry-zone">
+      <div class="ez-title">⚡ First Pullback Setup</div>
+      <div class="ez-grid">
+        <div class="ez-item"><div class="ez-label">Entry Zone</div><div class="ez-val entry">$${ez.entryLow}–$${ez.entryHigh}</div></div>
+        <div class="ez-item"><div class="ez-label">Stop</div><div class="ez-val stop">$${ez.stop}</div></div>
+        <div class="ez-item"><div class="ez-label">2R Target</div><div class="ez-val target">$${ez.target}</div></div>
+        <div class="ez-item"><div class="ez-label">R:R</div><div class="ez-val rr">${ez.rr}</div></div>
+      </div>
+      <div class="ez-note">Entry near PM High retest · Stop below PM Low · 2R target</div>
+    </div>` : '';
 
   const detail = `
     <div class="card-detail ${isOpen ? 'open' : ''}" id="detail-${s.ticker}">
       <div class="detail-grid">
-        <div class="dg-item"><div class="dg-label">Prev Close</div><div class="dg-val">$${s.prevClose||'—'}</div></div>
-        <div class="dg-item"><div class="dg-label">Gap %</div><div class="dg-val ${gapTierCls||'green'}">+${s.gapPct}%</div></div>
+        <div class="dg-item"><div class="dg-label">Prev Close</div><div class="dg-val">$${s.prevClose || '—'}</div></div>
+        <div class="dg-item"><div class="dg-label">Gap %</div><div class="dg-val ${gapTierCls || 'green'}">+${s.gapPct}%</div></div>
         <div class="dg-item"><div class="dg-label">$ Volume</div><div class="dg-val accent">${fmt(s.dollarVolume)}</div></div>
-        <div class="dg-item"><div class="dg-label">Float Rotation</div><div class="dg-val ${s.floatRotation>=25?'gold':s.floatRotation>=10?'green':''}">${s.floatRotation!==null&&s.floatRotation!==undefined?s.floatRotation.toFixed(1)+'%':'N/A'}</div></div>
+        <div class="dg-item"><div class="dg-label">Float Rotation</div><div class="dg-val ${s.floatRotation >= 25 ? 'gold' : s.floatRotation >= 10 ? 'green' : ''}">${s.floatRotation != null ? s.floatRotation.toFixed(1) + '%' : 'N/A'}</div></div>
         <div class="dg-item"><div class="dg-label">Shares Vol</div><div class="dg-val">${fmt(s.volume)}</div></div>
-        <div class="dg-item"><div class="dg-label">RVOL (ref)</div><div class="dg-val">${s.rvol}×</div></div>
-        <div class="dg-item"><div class="dg-label">PM High</div><div class="dg-val ${isPmh?'gold':''}">$${s.pmHigh||'—'}</div></div>
-        <div class="dg-item"><div class="dg-label">PM Low</div><div class="dg-val">$${s.pmLow||'—'}</div></div>
-        ${floatM2?'<div class="dg-item"><div class="dg-label">Float</div><div class="dg-val">'+floatM2.toFixed(1)+'M</div></div>':''}
+        <div class="dg-item"><div class="dg-label">RVOL (ref)</div><div class="dg-val">${s.rvol != null ? s.rvol + '×' : 'N/A'}</div></div>
+        <div class="dg-item"><div class="dg-label">PM High</div><div class="dg-val ${isPmh ? 'gold' : ''}">$${s.pmHigh || '—'}</div></div>
+        <div class="dg-item"><div class="dg-label">PM Low</div><div class="dg-val">$${s.pmLow || '—'}</div></div>
+        ${floatM ? `<div class="dg-item"><div class="dg-label">Float</div><div class="dg-val">${floatM.toFixed(1)}M</div></div>` : ''}
       </div>
-      ${(()=>{ const ez=calcEntryZone(s); if(!ez)return''; return `<div class="entry-zone"><div class="ez-title">⚡ First Pullback Setup</div><div class="ez-grid"><div class="ez-item"><div class="ez-label">Entry Zone</div><div class="ez-val entry">$${ez.entryLow}–$${ez.entryHigh}</div></div><div class="ez-item"><div class="ez-label">Stop</div><div class="ez-val stop">$${ez.stop}</div></div><div class="ez-item"><div class="ez-label">2R Target</div><div class="ez-val target">$${ez.target}</div></div><div class="ez-item"><div class="ez-label">R:R</div><div class="ez-val rr">${ez.rr}</div></div></div><div class="ez-note">Entry near PM High retest · Stop below PM Low · 2R target</div></div>`; })()}
+      ${entryZoneHtml}
       <div class="news-section">
         <div class="news-section-label">News Catalyst</div>
-        ${newsHtml}
+        ${buildNewsHtml(s)}
       </div>
       <div class="action-row">
-        <a class="act-btn google-btn" href="https://www.google.com/search?q=%22${encodeURIComponent(s.ticker+' News')}%22" target="_blank" onclick="event.stopPropagation()">🔍 Google It</a>
+        <a class="act-btn google-btn" href="https://www.google.com/search?q=%22${encodeURIComponent(s.ticker + ' News')}%22" target="_blank" onclick="event.stopPropagation()">🔍 Google It</a>
         <a class="act-btn" href="https://finance.yahoo.com/quote/${s.ticker}" target="_blank" onclick="event.stopPropagation()">📈 Yahoo</a>
         <a class="act-btn" href="https://robinhood.com/stocks/${s.ticker}" target="_blank" onclick="event.stopPropagation()">📊 RH</a>
       </div>
     </div>`;
 
-  return `<div class="stock-card ${isPmh?'pmh-active':''} ${isNew?'card-new':''}" id="card-${s.ticker}" onclick="toggleCard('${s.ticker}')" style="${isNew?'animation-delay:'+i*0.04+'s':''}">
+  return `<div class="stock-card ${isPmh ? 'pmh-active' : ''} ${isNew ? 'card-new' : ''} ${s.priceStale ? 'price-stale' : ''}" id="card-${s.ticker}" onclick="toggleCard('${s.ticker}')" style="${isNew ? 'animation-delay:' + i * 0.04 + 's' : ''}">
     <div class="card-main">
       <div class="card-ticker-col"><div class="card-ticker ${tickCls}">${s.ticker}</div>${floatTag}</div>
       <div class="card-middle">
         <div class="card-price-row">
-          <div class="card-price">$${s.price?s.price.toFixed(2):'—'}</div>
-          <div class="card-chg ${(s.change||0)>=0?'pos':'neg'}">${(s.change||0)>=0?'▲':'▼'} ${Math.abs(s.change||0).toFixed(1)}%</div>
+          <div class="card-price">$${s.price ? s.price.toFixed(2) : '—'}</div>
+          ${s.priceStale ? '<span class="price-stale-chip">⏱ stale</span>' : ''}
+          <div class="card-chg ${(s.change || 0) >= 0 ? 'pos' : 'neg'}">${(s.change || 0) >= 0 ? '▲' : '▼'} ${Math.abs(s.change || 0).toFixed(1)}%</div>
           <div class="card-sizeit" onclick="event.stopPropagation();openSizerWithPrice(${s.price})">🧮 Size It</div>
           <a class="card-rh" href="https://robinhood.com/stocks/${s.ticker}" target="_blank" onclick="event.stopPropagation()">📈 RH</a>
         </div>
         <div class="card-stats-row">
-          <div class="card-stat">$VOL <span>${s.dollarVolume>0?fmt(s.dollarVolume):'—'}</span></div>
-          <div class="card-stat">FROT <span class="${frotCls}">${s.floatRotation!==null&&s.floatRotation!==undefined?s.floatRotation.toFixed(1)+'%':'—'}</span></div>
+          <div class="card-stat">$VOL <span>${s.dollarVolume > 0 ? fmt(s.dollarVolume) : '—'}</span></div>
+          <div class="card-stat">FROT <span class="${frotCls}">${s.floatRotation != null ? s.floatRotation.toFixed(1) + '%' : '—'}</span></div>
         </div>
         <div class="card-cat-row">${catChip}</div>
       </div>
       <div class="card-right">
-        <div class="card-gap ${(s.gapPct||0)<0?'neg':gapTierCls}">+${(s.gapPct||0).toFixed(1)}%</div>
-        ${isPmh?'<div class="pmh-tag">⚡ PMH</div>':''}
+        <div class="card-gap ${(s.gapPct || 0) < 0 ? 'neg' : gapTierCls}">+${(s.gapPct || 0).toFixed(1)}%</div>
+        ${isPmh ? '<div class="pmh-tag">⚡ PMH</div>' : ''}
       </div>
     </div>
     ${detail}
   </div>`;
 }
 
-// ─── NEWS HTML ───────────────────────────────────
-// PATCHED: adds sentiment badge and left border stripe per article
+// ─── NEWS HTML ───────────────────────────────────────────────────────────────
+
 function buildNewsHtml(s) {
   const news = s.news || [];
   if (!news.length) {
     return `<div class="no-news">No news via API. Search directly:<br/><br/>
-      <a href="https://news.google.com/search?q=${encodeURIComponent(s.ticker+' stock')}" target="_blank">🔍 Google News</a>
+      <a href="https://news.google.com/search?q=${encodeURIComponent(s.ticker + ' stock')}" target="_blank">🔍 Google News</a>
       &nbsp;&nbsp;<a href="https://www.benzinga.com/stock/${s.ticker.toLowerCase()}" target="_blank">📰 Benzinga</a>
     </div>`;
   }
   return news.slice(0, 3).map(n => {
-    const catColor    = n.catalyst ? (CAT_COLORS[n.catalyst.type] || '#6a90b0') : '#6a90b0';
-    const isRecent    = isNewsRecent(n.publishedAt);
-    const url         = n.url && n.url !== '#' ? n.url : 'https://news.google.com/search?q=' + encodeURIComponent((s.ticker||'') + ' ' + (n.headline||''));
-    // Sentiment badge — only shown when Polygon provides it
-    let sentBadge = '';
-    if (n.sentiment) {
-      const sm = sentimentMeta(n.sentiment);
-      sentBadge = `<span class="news-sentiment-badge ${sm.cls}">${sm.emoji} ${n.sentiment}</span>`;
-    }
+    const catColor   = n.catalyst ? (CAT_COLORS[n.catalyst.type] || '#6a90b0') : '#6a90b0';
+    const isRecent   = isNewsRecent(n.publishedAt);
+    const url        = n.url && n.url !== '#'
+      ? n.url
+      : 'https://news.google.com/search?q=' + encodeURIComponent((s.ticker || '') + ' ' + (n.headline || ''));
+    const sm         = n.sentiment ? sentimentMeta(n.sentiment) : null;
+    const sentBadge  = sm ? `<span class="news-sentiment-badge ${sm.cls}">${sm.emoji} ${n.sentiment}</span>` : '';
     const sentCardCls = n.sentiment ? 'sent-' + n.sentiment : '';
-    return `<a class="news-card ${sentCardCls}" href="${url}" target="_blank" onclick="event.stopPropagation()" style="${isRecent?'':'opacity:0.5'}">
-      <div class="news-card-top"><div class="news-cat-dot" style="background:${catColor}"></div><div class="news-headline">${n.headline||'View article'}${!isRecent?' <span style="color:var(--dim);font-size:9px">(older)</span>':''}</div></div>
-      <div class="news-meta"><span class="news-source">${n.source||'News'}</span>${sentBadge}<span class="news-time">${n.timeAgo||''}</span></div>
+    return `<a class="news-card ${sentCardCls}" href="${url}" target="_blank" onclick="event.stopPropagation()" style="${isRecent ? '' : 'opacity:0.5'}">
+      <div class="news-card-top"><div class="news-cat-dot" style="background:${catColor}"></div><div class="news-headline">${n.headline || 'View article'}${!isRecent ? ' <span style="color:var(--dim);font-size:9px">(older)</span>' : ''}</div></div>
+      <div class="news-meta"><span class="news-source">${n.source || 'News'}</span>${sentBadge}<span class="news-time">${n.timeAgo || ''}</span></div>
       <div class="news-link-row">🔗 Tap to read full article</div>
     </a>`;
   }).join('');
 }
 
 function toggleCard(ticker) {
-  if (STATE.expanded.has(ticker)) STATE.expanded.delete(ticker); else STATE.expanded.add(ticker);
-  const d = document.getElementById('detail-' + ticker);
-  if (d) d.classList.toggle('open', STATE.expanded.has(ticker));
+  if (STATE.expanded.has(ticker)) STATE.expanded.delete(ticker);
+  else STATE.expanded.add(ticker);
+  document.getElementById('detail-' + ticker)?.classList.toggle('open', STATE.expanded.has(ticker));
 }
 
-// ─── SIZE IT ─────────────────────────────────────
+// ─── SIZE IT ─────────────────────────────────────────────────────────────────
+
 function openSizerWithPrice(price) {
   document.getElementById('sz-entry').value = price.toFixed(2);
   document.getElementById('sz-prefill-badge').style.display = 'inline-block';
-  document.getElementById('sz-stop').value = '';
-  document.getElementById('sz-results').style.display = 'none';
-  document.getElementById('sz-warning').style.display = 'none';
+  document.getElementById('sz-stop').value  = '';
+  // Don't clear existing results — user may be comparing prices
   showPage('sizer');
   setTimeout(() => document.getElementById('sz-stop').focus(), 300);
 }
 
-// ─── CLOCK ───────────────────────────────────────
+// ─── CLOCK ───────────────────────────────────────────────────────────────────
+
 function updateClock() {
   const now  = new Date();
-  const et   = now.toLocaleString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+  const et   = now.toLocaleString('en-US', { timeZone:'America/New_York', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
   document.getElementById('clock').textContent = et;
-  const etH  = parseInt(now.toLocaleString('en-US',{timeZone:'America/New_York',hour:'2-digit',hour12:false}));
-  const etM  = parseInt(now.toLocaleString('en-US',{timeZone:'America/New_York',minute:'2-digit'}));
+  const etH  = parseInt(now.toLocaleString('en-US', { timeZone:'America/New_York', hour:'2-digit', hour12:false }));
+  const etM  = parseInt(now.toLocaleString('en-US', { timeZone:'America/New_York', minute:'2-digit' }));
   const mins = etH * 60 + etM;
   let label, dotCls;
   if (mins >= 240 && mins < 570)       { label = 'PRE-MARKET';  dotCls = 'pre';  }
@@ -1028,285 +1175,548 @@ function updateClock() {
   else if (mins >= 960 && mins < 1200) { label = 'AFTER HOURS'; dotCls = 'pre';  }
   else                                 { label = 'CLOSED';       dotCls = '';     }
   document.getElementById('mpill-label').textContent = STATE.isLive ? label : 'CONNECTING';
-  document.getElementById('mpill-dot').className = 'mpill-dot ' + (STATE.isLive ? dotCls : '');
+  document.getElementById('mpill-dot').className     = 'mpill-dot ' + (STATE.isLive ? dotCls : '');
 }
 
-// ─── FETCH ───────────────────────────────────────
+// ─── FETCH ───────────────────────────────────────────────────────────────────
+
 function showSkeletons() {
   if (STATE.renderedTickers.length > 0) return;
-  const list = document.getElementById('stock-list');
   document.getElementById('empty-state').style.display = 'none';
-  list.innerHTML = [0,1,2,3,4].map((_,i) => `<div class="skeleton-card" style="animation-delay:${i*0.1}s"><div class="skel-ticker"></div><div class="skel-body"><div class="skel-line w75"></div><div class="skel-line w40"></div><div class="skel-line w60"></div></div><div class="skel-right"></div></div>`).join('');
+  document.getElementById('stock-list').innerHTML = [0,1,2,3,4].map((_,i) =>
+    `<div class="skeleton-card" style="animation-delay:${i*0.1}s">
+      <div class="skel-ticker"></div>
+      <div class="skel-body"><div class="skel-line w75"></div><div class="skel-line w40"></div><div class="skel-line w60"></div></div>
+      <div class="skel-right"></div>
+    </div>`
+  ).join('');
 }
 
 function setScanningState(state) {
   const el = document.getElementById('stat-scanning');
   if (!el) return;
-  if (state === 'scanning') { if (el.querySelector('.scanning-pulse')) return; el.innerHTML = '<span class="scanning-pulse"><span class="sp-dot"></span><span class="sp-dot"></span><span class="sp-dot"></span></span>'; }
-  else if (state === 'done') { el.textContent = '8,400+'; }
+  if (state === 'scanning') {
+    if (el.querySelector('.scanning-pulse')) return;
+    el.innerHTML = '<span class="scanning-pulse"><span class="sp-dot"></span><span class="sp-dot"></span><span class="sp-dot"></span></span>';
+  } else if (state === 'done') {
+    el.textContent = '8,400+';
+  }
 }
 
 async function fetchLiveData() {
   setScanningState('scanning');
   showSkeletons();
-  let gotData = false;
   try {
-    const res = await fetch(BACKEND + '/api/scanner?' + new URLSearchParams({priceMin:STATE.filters.priceMin,priceMax:STATE.filters.priceMax,dollarVolMin:STATE.filters.dollarVolMin,floatRotMin:STATE.filters.floatRotMin,gapMin:STATE.filters.gapMin,floatMax:STATE.filters.floatMax}));
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        if (data[0].ticker && data[0].ticker.startsWith('DEMO')) { setScanningState('idle'); return; }
-        STATE.stocks = data; STATE.isLive = true; gotData = true; updateConnStatus(true); applyFilters();
-      } else if (Array.isArray(data) && data.length === 0) {
-        STATE.isLive = true; updateConnStatus(true); applyFilters();
-      }
+    const params = new URLSearchParams({
+      priceMin:    STATE.filters.priceMin,
+      priceMax:    STATE.filters.priceMax,
+      dollarVolMin:STATE.filters.dollarVolMin,
+      floatRotMin: STATE.filters.floatRotMin,
+      gapMin:      STATE.filters.gapMin,
+      floatMax:    STATE.filters.floatMax,
+    });
+    const res = await fetch(BACKEND + '/api/scanner?' + params);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!Array.isArray(data) || !data.length) {
+      if (Array.isArray(data)) { STATE.isLive = true; updateConnStatus(true); applyFilters(); }
+      return;
     }
-  } catch(e) { console.warn('Fetch failed:', e.message); return; }
-  if (gotData) setScanningState('done');
+    if (data[0].ticker?.startsWith('DEMO')) { setScanningState('done'); return; }
+    STATE.stocks = data;
+    STATE.isLive = true;
+    store_lastFetchTime = Date.now();
+    updateConnStatus(true);
+    applyFilters();
+    setScanningState('done');
+  } catch(e) {
+    console.warn('[Fetch] Failed:', e.message);
+  }
 }
 
 function updateConnStatus(live) {
   STATE.isLive = live;
-  const badge = document.getElementById('conn-badge'), label = document.getElementById('conn-label');
-  badge.className = 'status-badge ' + (live ? 'live' : 'demo');
-  label.textContent = live ? 'Live' : 'Connecting';
+  const badge = document.getElementById('conn-badge');
+  const label = document.getElementById('conn-label');
+  badge.className    = 'status-badge ' + (live ? 'live' : 'demo');
+  label.textContent  = live ? 'Live' : 'Connecting';
 }
+
+// ─── WEBSOCKET ───────────────────────────────────────────────────────────────
 
 function connectWS() {
   try {
     const ws = new WebSocket(WS_BACKEND);
+
     ws.onopen = () => { updateConnStatus(true); updateClock(); };
-    ws.onmessage = (e) => { try { const msg = JSON.parse(e.data); if (msg.type === 'scan_results' && Array.isArray(msg.data) && msg.data.length > 0) { if (msg.data[0].ticker && msg.data[0].ticker.startsWith('DEMO')) return; STATE.stocks = msg.data; STATE.isLive = true; applyFilters(); } } catch(err){} };
+
+    ws.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+
+        // Full discovery scan result — re-renders card list
+        if (msg.type === 'scan_results' && Array.isArray(msg.data) && msg.data.length > 0) {
+          if (msg.data[0].ticker?.startsWith('DEMO')) return;
+          STATE.stocks = msg.data;
+          STATE.isLive = true;
+          store_lastFetchTime = Date.now();
+          applyFilters();
+          setScanningState('done');
+        }
+
+        // Phase 0: fast price refresh — patches card prices in-place.
+        // Payload: { ticker: { price, lastTradeTime, priceStale, updatedAt } }
+        // Does not re-sort or re-render the list.
+        if (msg.type === 'price_update' && msg.data) {
+          let anyUpdated = false;
+          for (const stock of STATE.stocks) {
+            const u = msg.data[stock.ticker];
+            if (!u) continue;
+            stock.price      = u.price;
+            stock.priceStale = u.priceStale;
+            if (stock.prevClose > 0) {
+              stock.change = parseFloat(((u.price - stock.prevClose) / stock.prevClose * 100).toFixed(2));
+            }
+            anyUpdated = true;
+            const cardEl = document.getElementById('card-' + stock.ticker);
+            if (cardEl) patchCardData(cardEl, stock);
+          }
+          if (anyUpdated) updateTimestamp();
+        }
+
+      } catch(err) {}
+    };
+
     ws.onclose = () => { updateConnStatus(false); setTimeout(connectWS, 5000); };
     ws.onerror = () => {};
   } catch(e) {}
 }
 
-// ─── FILTER CONTROLS ─────────────────────────────
-function openFilters(){document.getElementById('filter-overlay').classList.add('open');document.getElementById('filter-drawer').classList.add('open')}
-function closeFilters(){document.getElementById('filter-overlay').classList.remove('open');document.getElementById('filter-drawer').classList.remove('open')}
-function applyAndClose(){applyDrawerFilters();closeFilters();fetchLiveData()}
-function applyDrawerFilters(){
-  STATE.filters.priceMin    = parseFloat(document.getElementById('f-price-min').value)||0.5;
-  STATE.filters.priceMax    = parseFloat(document.getElementById('f-price-max').value)||25;
-  STATE.filters.dollarVolMin= parseInt(document.getElementById('f-dvol').value)||0;
-  STATE.filters.floatRotMin = parseFloat(document.getElementById('f-frot').value)||0;
+// ─── FILTER CONTROLS ─────────────────────────────────────────────────────────
+
+function openFilters()  { document.getElementById('filter-overlay').classList.add('open'); document.getElementById('filter-drawer').classList.add('open'); }
+function closeFilters() { document.getElementById('filter-overlay').classList.remove('open'); document.getElementById('filter-drawer').classList.remove('open'); }
+
+function applyAndClose() { applyDrawerFilters(); closeFilters(); fetchLiveData(); }
+
+function applyDrawerFilters() {
+  STATE.filters.priceMin    = parseFloat(document.getElementById('f-price-min').value) || 0.5;
+  STATE.filters.priceMax    = parseFloat(document.getElementById('f-price-max').value) || 25;
+  STATE.filters.dollarVolMin= parseInt(document.getElementById('f-dvol').value) || 0;
+  STATE.filters.floatRotMin = parseFloat(document.getElementById('f-frot').value) || 0;
   STATE.filters.gapMin      = parseFloat(document.getElementById('f-gap').value);
   STATE.filters.floatMax    = parseInt(document.getElementById('f-float').value);
   applyFilters();
 }
-function updateSliderDisplay(type){
-  const map={dvol:{el:'f-dvol',disp:'fv-dvol',fn:v=>{const n=parseInt(v);return n>=1000000?'$'+(n/1000000).toFixed(1)+'M':n>=1000?'$'+(n/1000).toFixed(0)+'K':'$0'}},frot:{el:'f-frot',disp:'fv-frot',fn:v=>v+'%'},gap:{el:'f-gap',disp:'fv-gap',fn:v=>v+'%'},float:{el:'f-float',disp:'fv-float',fn:v=>fmt(parseInt(v))}};
-  const m=map[type];if(!m)return;
-  document.getElementById(m.disp).textContent=m.fn(document.getElementById(m.el).value);
+
+function updateSliderDisplay(type) {
+  const map = {
+    dvol:  { el:'f-dvol',  disp:'fv-dvol',  fn: v => { const n=parseInt(v); return n>=1_000_000?'$'+(n/1_000_000).toFixed(1)+'M':n>=1000?'$'+(n/1000).toFixed(0)+'K':'$0'; } },
+    frot:  { el:'f-frot',  disp:'fv-frot',  fn: v => v + '%' },
+    gap:   { el:'f-gap',   disp:'fv-gap',   fn: v => v + '%' },
+    float: { el:'f-float', disp:'fv-float', fn: v => fmt(parseInt(v)) },
+  };
+  const m = map[type]; if (!m) return;
+  document.getElementById(m.disp).textContent = m.fn(document.getElementById(m.el).value);
 }
-function toggleFilter(name){const el=document.getElementById('t-'+name),on=el.classList.toggle('on');if(name==='catalyst')STATE.filters.catalyst=on;if(name==='etf')STATE.filters.excludeEtf=on;}
-function loadPreset(name){
-  const p=STATE.presets[name];if(!p)return;
-  document.querySelectorAll('.preset-card').forEach(c=>c.classList.remove('active'));
-  document.getElementById('preset-'+name)?.classList.add('active');
-  Object.assign(STATE.filters,p);
-  document.getElementById('f-price-min').value=p.priceMin;document.getElementById('f-price-max').value=p.priceMax;
-  document.getElementById('f-dvol').value=p.dollarVolMin;document.getElementById('f-frot').value=p.floatRotMin;
-  document.getElementById('f-gap').value=p.gapMin;document.getElementById('f-float').value=p.floatMax;
-  ['dvol','frot','gap','float'].forEach(updateSliderDisplay);applyFilters();
+
+function toggleFilter(name) {
+  const on = document.getElementById('t-' + name).classList.toggle('on');
+  if (name === 'catalyst') STATE.filters.catalyst  = on;
+  if (name === 'etf')      STATE.filters.excludeEtf = on;
 }
-function relaxFilters(){
-  STATE.filters.gapMin=0;STATE.filters.dollarVolMin=0;STATE.filters.floatRotMin=0;STATE.filters.floatMax=500000000;STATE.filters.catalyst=false;
-  document.getElementById('f-gap').value=0;document.getElementById('f-dvol').value=0;document.getElementById('f-frot').value=0;document.getElementById('f-float').value=500000000;
+
+function loadPreset(name) {
+  const p = STATE.presets[name]; if (!p) return;
+  document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('active'));
+  document.getElementById('preset-' + name)?.classList.add('active');
+  Object.assign(STATE.filters, p);
+  document.getElementById('f-price-min').value = p.priceMin;
+  document.getElementById('f-price-max').value = p.priceMax;
+  document.getElementById('f-dvol').value       = p.dollarVolMin;
+  document.getElementById('f-frot').value       = p.floatRotMin;
+  document.getElementById('f-gap').value        = p.gapMin;
+  document.getElementById('f-float').value      = p.floatMax;
+  ['dvol','frot','gap','float'].forEach(updateSliderDisplay);
+  applyFilters();
+}
+
+function relaxFilters() {
+  STATE.filters.gapMin      = 0;
+  STATE.filters.dollarVolMin= 0;
+  STATE.filters.floatRotMin = 0;
+  STATE.filters.floatMax    = 50_000_000;  // 50M — consistent with display default
+  STATE.filters.catalyst    = false;
+  document.getElementById('f-gap').value   = 0;
+  document.getElementById('f-dvol').value  = 0;
+  document.getElementById('f-frot').value  = 0;
+  document.getElementById('f-float').value = 50_000_000;
   document.getElementById('t-catalyst').classList.remove('on');
-  ['dvol','frot','gap','float'].forEach(updateSliderDisplay);applyFilters();
+  ['dvol','frot','gap','float'].forEach(updateSliderDisplay);
+  applyFilters();
 }
-function openSettings(){document.getElementById('settings-overlay').classList.add('open')}
-function closeSettings(){document.getElementById('settings-overlay').classList.remove('open')}
-function setRefreshRate(ms){
-  const labels={8000:'8s',15000:'15s',30000:'30s',60000:'60s'};
-  document.querySelectorAll('.rate-pill').forEach(p=>{p.classList.toggle('active',p.textContent===labels[ms])});
-  clearInterval(STATE.refreshTimer);STATE.refreshRate=ms;STATE.refreshTimer=setInterval(fetchLiveData,ms);
-}
-function manualRefresh(){fetchLiveData()}
 
-// ═══════════════════════════════════════════════════
+function openSettings()  { document.getElementById('settings-overlay').classList.add('open'); }
+function closeSettings() { document.getElementById('settings-overlay').classList.remove('open'); }
+
+// Discovery refresh rate — controls the REST poll fallback interval.
+// Price updates arrive faster via WebSocket price_update events.
+function setRefreshRate(ms) {
+  const labels = { 8000:'8s', 15000:'15s', 30000:'30s', 60000:'60s' };
+  document.querySelectorAll('.rate-pill').forEach(p => {
+    p.classList.toggle('active', p.textContent === labels[ms]);
+  });
+  clearInterval(STATE.refreshTimer);
+  STATE.refreshRate  = ms;
+  STATE.refreshTimer = setInterval(fetchLiveData, ms);
+}
+
+function manualRefresh() { fetchLiveData(); }
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // POSITION SIZER
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════
+
 let sizerAccount = parseFloat(localStorage.getItem('sb_account') || '700');
-let sizerRiskPct = parseFloat(localStorage.getItem('sb_risk') || '0.015');
+let sizerRiskPct = parseFloat(localStorage.getItem('sb_risk')    || '0.015');
 
-function sizerUpdateAccount(){
-  const val=parseFloat(document.getElementById('sz-account').value);
-  if(!isNaN(val)&&val>0){sizerAccount=val;localStorage.setItem('sb_account',val);document.getElementById('sz-account-display').textContent='$'+val.toLocaleString('en-US',{maximumFractionDigits:0});}
+// Phase 0: account-relative daily loss limit — 1% of account size.
+// Scales automatically as account grows. Minimum $25 for small accounts.
+function getDailyLossLimit() { return Math.max(25, sizerAccount * 0.01); }
+
+function sizerUpdateAccount() {
+  const val = parseFloat(document.getElementById('sz-account').value);
+  if (!isNaN(val) && val > 0) {
+    sizerAccount = val;
+    localStorage.setItem('sb_account', val);
+    document.getElementById('sz-account-display').textContent = '$' + val.toLocaleString('en-US', { maximumFractionDigits:0 });
+  }
   sizerCalc();
 }
-function scaleAccount(delta){
-  sizerAccount=Math.max(100,sizerAccount+delta);localStorage.setItem('sb_account',sizerAccount);
-  document.getElementById('sz-account').value=sizerAccount;
-  document.getElementById('sz-account-display').textContent='$'+sizerAccount.toLocaleString('en-US',{maximumFractionDigits:0});
+
+function scaleAccount(delta) {
+  sizerAccount = Math.max(100, sizerAccount + delta);
+  localStorage.setItem('sb_account', sizerAccount);
+  document.getElementById('sz-account').value = sizerAccount;
+  document.getElementById('sz-account-display').textContent = '$' + sizerAccount.toLocaleString('en-US', { maximumFractionDigits:0 });
   sizerCalc();
 }
-function sizerSetRisk(pct,btn){
-  sizerRiskPct=pct/100;localStorage.setItem('sb_risk',sizerRiskPct);
-  document.querySelectorAll('.risk-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');sizerCalc();
-}
-function sizerCalc(){
-  const entry=parseFloat(document.getElementById('sz-entry').value);
-  const stop=parseFloat(document.getElementById('sz-stop').value);
-  const warnEl=document.getElementById('sz-warning'),resEl=document.getElementById('sz-results');
-  warnEl.style.display='none';warnEl.textContent='';
-  if(!entry||!stop||isNaN(entry)||isNaN(stop)){resEl.style.display='none';return}
-  if(stop>=entry){warnEl.innerHTML='⚠️ Stop price must be below entry price.';warnEl.style.display='block';resEl.style.display='none';return}
-  const riskAmt=sizerAccount*sizerRiskPct,rDist=entry-stop,shares=Math.floor(riskAmt/rDist);
-  if(shares<1){warnEl.innerHTML=`⚠️ Stop too wide. At ${(sizerRiskPct*100).toFixed(1)}% risk (${fmtDollar(riskAmt)}), can't buy 1 share with ${fmtDollar(rDist)} stop.`;warnEl.style.display='block';resEl.style.display='none';return}
-  const posSize=shares*entry,actualRisk=shares*rDist,target=entry+(rDist*2),reward=shares*rDist*2,actualRiskPct=(actualRisk/sizerAccount)*100;
-  const warnings=[];
-  if(posSize>sizerAccount*0.5)warnings.push(`⚠️ Position (${fmtDollar(posSize)}) is over 50% of account.`);
-  if(actualRiskPct>3)warnings.push(`⚠️ Risk is ${actualRiskPct.toFixed(1)}% of account — above 3%.`);
-  if(warnings.length){warnEl.innerHTML=warnings.join('<br><br>');warnEl.style.display='block'}
-  const rValEl=document.getElementById('sz-rvalue');
-  rValEl.textContent=fmtDollar(actualRisk);rValEl.className='result-r-value '+(actualRisk<50?'r-green':actualRisk<=100?'r-yellow':'r-red');
-  document.getElementById('sz-shares').textContent=shares;
-  document.getElementById('sz-possize').textContent=fmtDollar(posSize);
-  document.getElementById('sz-maxrisk').textContent=fmtDollar(actualRisk);
-  document.getElementById('sz-target').textContent=fmtDollar(target);
-  document.getElementById('sz-rdist').textContent=fmtDollar(rDist);
-  document.getElementById('tp-entry').textContent=fmtDollar(entry);
-  document.getElementById('tp-stop').textContent=fmtDollar(stop);
-  document.getElementById('tp-target').textContent=fmtDollar(target);
-  document.getElementById('tp-shares').textContent=shares+' shares';
-  document.getElementById('tp-riskamt').textContent='−'+fmtDollar(actualRisk);
-  document.getElementById('tp-reward').textContent='+'+fmtDollar(reward);
-  document.getElementById('tp-riskpct').textContent=actualRiskPct.toFixed(2)+'%';
-  resEl.style.display='flex';
+
+function sizerSetRisk(pct, btn) {
+  sizerRiskPct = pct / 100;
+  localStorage.setItem('sb_risk', sizerRiskPct);
+  document.querySelectorAll('.risk-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  sizerCalc();
 }
 
-// ─── ADD TRADE MODAL ─────────────────────────────
-function openAddTrade(){
-  document.getElementById('at-date').value=new Date().toISOString().split('T')[0];
-  ['at-ticker','at-entry','at-exit','at-shares'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('at-pnl-preview').textContent='—';document.getElementById('at-pnl-preview').style.color='var(--dim)';
-  document.getElementById('add-trade-overlay').classList.add('open');
-  setTimeout(()=>document.getElementById('at-ticker').focus(),100);
-}
-function closeAddTradeModal(){document.getElementById('add-trade-overlay').classList.remove('open')}
-function closeAddTrade(e){if(e.target===document.getElementById('add-trade-overlay'))closeAddTradeModal()}
-function previewPnl(){
-  const entry=parseFloat(document.getElementById('at-entry').value)||0;
-  const exit=parseFloat(document.getElementById('at-exit').value)||0;
-  const shares=parseInt(document.getElementById('at-shares').value)||0;
-  const el=document.getElementById('at-pnl-preview');
-  if(!entry||!exit||!shares){el.textContent='—';el.style.color='var(--dim)';return}
-  const pnl=parseFloat(((exit-entry)*shares).toFixed(2));
-  el.textContent=(pnl>=0?'+':'')+'$'+Math.abs(pnl).toFixed(2);
-  el.style.color=pnl>0?'var(--green)':pnl<0?'var(--red)':'var(--dim)';
-}
-function exportCSV(){
-  if(!journalTrades.length){alert('No trades to export');return}
-  const headers='Position ID,Date,Symbol,Side,Quantity,Entry Price,Exit Price,P&L,Commission,Notes';
-  const rows=journalTrades.map(t=>[t.id,t.date,t.symbol,t.side||'Long',t.qty,t.entry,t.exit,t.pnl,'0.00',t.notes||''].join(','));
-  const csv=[headers,...rows].join('\n');
-  const blob=new Blob([csv],{type:'text/csv'}),url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download='scanny_trades_'+new Date().toISOString().split('T')[0]+'.csv';a.click();URL.revokeObjectURL(url);
-}
-function submitAddTrade(){
-  const ticker=document.getElementById('at-ticker').value.trim().toUpperCase();
-  const entry=parseFloat(document.getElementById('at-entry').value);
-  const exit=parseFloat(document.getElementById('at-exit').value);
-  const shares=parseInt(document.getElementById('at-shares').value);
-  const date=document.getElementById('at-date').value;
-  if(!ticker||!entry||!exit||!shares||!date){alert('Fill in all fields');return}
-  const pnl=parseFloat(((exit-entry)*shares).toFixed(2));
-  journalTrades.unshift({id:'M'+Date.now(),date,symbol:ticker,side:'Long',qty:shares,entry,exit,pnl,notes:''});
-  journalSave();renderJournal();closeAddTradeModal();
+function sizerCalc() {
+  const entry  = parseFloat(document.getElementById('sz-entry').value);
+  const stop   = parseFloat(document.getElementById('sz-stop').value);
+  const warnEl = document.getElementById('sz-warning');
+  const resEl  = document.getElementById('sz-results');
+  warnEl.style.display = 'none'; warnEl.textContent = '';
+
+  if (!entry || !stop || isNaN(entry) || isNaN(stop)) { resEl.style.display = 'none'; return; }
+  if (stop >= entry) {
+    warnEl.innerHTML = '⚠️ Stop price must be below entry price.';
+    warnEl.style.display = 'block'; resEl.style.display = 'none'; return;
+  }
+
+  const riskAmt  = sizerAccount * sizerRiskPct;
+  const rDist    = entry - stop;
+  const shares   = Math.floor(riskAmt / rDist);
+
+  if (shares < 1) {
+    warnEl.innerHTML = `⚠️ Stop too wide. At ${(sizerRiskPct*100).toFixed(1)}% risk (${fmtDollar(riskAmt)}), can't buy 1 share with ${fmtDollar(rDist)} stop.`;
+    warnEl.style.display = 'block'; resEl.style.display = 'none'; return;
+  }
+
+  const posSize      = shares * entry;
+  const actualRisk   = shares * rDist;
+  const target       = entry + (rDist * 2);
+  const reward       = shares * rDist * 2;
+  const actualRiskPct= (actualRisk / sizerAccount) * 100;
+  const warnings     = [];
+
+  if (posSize > sizerAccount * 0.5) warnings.push(`⚠️ Position (${fmtDollar(posSize)}) is over 50% of account.`);
+  if (actualRiskPct > 3)            warnings.push(`⚠️ Risk is ${actualRiskPct.toFixed(1)}% of account — above 3%.`);
+  if (warnings.length) { warnEl.innerHTML = warnings.join('<br><br>'); warnEl.style.display = 'block'; }
+
+  const rValEl = document.getElementById('sz-rvalue');
+  rValEl.textContent = fmtDollar(actualRisk);
+  rValEl.className   = 'result-r-value ' + (actualRisk < 50 ? 'r-green' : actualRisk <= 100 ? 'r-yellow' : 'r-red');
+
+  document.getElementById('sz-shares').textContent  = shares;
+  document.getElementById('sz-possize').textContent = fmtDollar(posSize);
+  document.getElementById('sz-maxrisk').textContent = fmtDollar(actualRisk);
+  document.getElementById('sz-target').textContent  = fmtDollar(target);
+  document.getElementById('sz-rdist').textContent   = fmtDollar(rDist);
+  document.getElementById('tp-entry').textContent   = fmtDollar(entry);
+  document.getElementById('tp-stop').textContent    = fmtDollar(stop);
+  document.getElementById('tp-target').textContent  = fmtDollar(target);
+  document.getElementById('tp-shares').textContent  = shares + ' shares';
+  document.getElementById('tp-riskamt').textContent = '−' + fmtDollar(actualRisk);
+  document.getElementById('tp-reward').textContent  = '+' + fmtDollar(reward);
+  document.getElementById('tp-riskpct').textContent = actualRiskPct.toFixed(2) + '%';
+  resEl.style.display = 'flex';
 }
 
-// ─── PIN ─────────────────────────────────────────
-const PIN_KEY='sb_auth',PIN_CODE='1337';
-let pinEntry='';
-function pinKey(d){if(pinEntry.length>=4)return;pinEntry+=d;updatePinDots();if(pinEntry.length===4)setTimeout(checkPin,120)}
-function pinDel(){pinEntry=pinEntry.slice(0,-1);updatePinDots();document.getElementById('pin-error').textContent='';document.querySelectorAll('.pin-dot').forEach(d=>d.classList.remove('error'))}
-function updatePinDots(){for(let i=0;i<4;i++){const dot=document.getElementById('pd'+i);dot.classList.toggle('filled',i<pinEntry.length);dot.classList.remove('error')}}
-function checkPin(){
-  if(pinEntry===PIN_CODE){localStorage.setItem(PIN_KEY,'1');document.getElementById('pin-screen').classList.add('hidden');}
-  else{document.querySelectorAll('.pin-dot').forEach(d=>d.classList.add('error'));document.getElementById('pin-error').textContent='Incorrect PIN';setTimeout(()=>{pinEntry='';updatePinDots();document.getElementById('pin-error').textContent=''},800)}
-}
-function checkAuth(){if(localStorage.getItem(PIN_KEY)==='1')document.getElementById('pin-screen').classList.add('hidden')}
+// ═══════════════════════════════════════════════════════════════════════════════
+// JOURNAL
+// ═══════════════════════════════════════════════════════════════════════════════
 
-// ─── JOURNAL ─────────────────────────────────────
-const JOURNAL_KEY='sb_journal_trades',DAILY_LOSS_LIMIT=25;
-let journalTrades=[];
+const JOURNAL_KEY = 'sb_journal_trades';
+let journalTrades = [];
 
-async function journalLoad(){
-  try{const res=await fetch('/api/journal');if(res.ok){journalTrades=await res.json();localStorage.setItem(JOURNAL_KEY,JSON.stringify(journalTrades));}else throw new Error('unavailable');}
-  catch(e){try{journalTrades=JSON.parse(localStorage.getItem(JOURNAL_KEY)||'[]');}catch(e2){journalTrades=[];}}
+async function journalLoad() {
+  try {
+    const res = await fetch('/api/journal');
+    if (res.ok) {
+      journalTrades = await res.json();
+      localStorage.setItem(JOURNAL_KEY, JSON.stringify(journalTrades));
+    } else throw new Error('unavailable');
+  } catch(e) {
+    try { journalTrades = JSON.parse(localStorage.getItem(JOURNAL_KEY) || '[]'); }
+    catch(e2) { journalTrades = []; }
+  }
   renderJournal();
 }
-async function journalSave(){
-  localStorage.setItem(JOURNAL_KEY,JSON.stringify(journalTrades));
-  try{await fetch('/api/journal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(journalTrades)});}
-  catch(e){console.log('[Journal] Backend sync failed')}
-}
-function importCSV(event){
-  const file=event.target.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const lines=e.target.result.split('\n').filter(Boolean);
-    const headers=lines[0].split(',').map(h=>h.trim());
-    const idxMap={id:headers.indexOf('Position ID'),date:headers.indexOf('Date'),symbol:headers.indexOf('Symbol'),side:headers.indexOf('Side'),qty:headers.indexOf('Quantity'),entry:headers.indexOf('Entry Price'),exit:headers.indexOf('Exit Price'),pnl:headers.indexOf('P&L'),notes:headers.indexOf('Notes')};
-    const existing=new Set(journalTrades.map(t=>t.id));let added=0;
-    for(let i=1;i<lines.length;i++){
-      const cols=lines[i].split(',');if(cols.length<8)continue;
-      const id=cols[idxMap.id]?.trim();if(!id||existing.has(id))continue;
-      journalTrades.push({id,date:cols[idxMap.date]?.trim(),symbol:cols[idxMap.symbol]?.trim(),side:cols[idxMap.side]?.trim(),qty:parseInt(cols[idxMap.qty])||0,entry:parseFloat(cols[idxMap.entry])||0,exit:parseFloat(cols[idxMap.exit])||0,pnl:parseFloat(cols[idxMap.pnl])||0,notes:cols[idxMap.notes]?.trim()||''});added++;
-    }
-    journalTrades.sort((a,b)=>new Date(b.date)-new Date(a.date));journalSave();renderJournal();event.target.value='';alert(added+' new trades imported');
-  };reader.readAsText(file);
-}
-function renderJournal(){
-  const list=document.getElementById('trade-list');if(!list)return;
-  if(!journalTrades.length){list.innerHTML='<div class="journal-empty">No trades yet.<br/>Import a TradrLedger CSV<br/>to see your stats here.</div>';updateJournalStats([]);return;}
-  const today=new Date().toISOString().split('T')[0];
-  const todayTrades=journalTrades.filter(t=>t.date===today);
-  const todayPnl=todayTrades.reduce((s,t)=>s+t.pnl,0);
-  let streak=0;for(const t of journalTrades){if(t.pnl<0)streak++;else break;}
-  const banner=document.getElementById('streak-banner');if(banner)banner.classList.toggle('show',streak>=2);
-  const lossToday=Math.abs(Math.min(todayPnl,0)),pct=Math.min((lossToday/DAILY_LOSS_LIMIT)*100,100);
-  const fill=document.getElementById('dlb-fill');
-  if(fill){fill.style.width=pct+'%';fill.className='dlb-fill'+(pct>=100?' danger':pct>=60?' warn':'');}
-  const usedEl=document.getElementById('dlb-used');if(usedEl)usedEl.textContent='$'+lossToday.toFixed(2);
-  const tradesToday=document.getElementById('dlb-trades');if(tradesToday)tradesToday.textContent=todayTrades.length+' trade'+(todayTrades.length!==1?'s':'')+' today';
-  const todayPnlEl=document.getElementById('dlb-today-pnl');if(todayPnlEl){todayPnlEl.textContent=(todayPnl>=0?'+':'')+'$'+todayPnl.toFixed(2);todayPnlEl.style.color=todayPnl>=0?'var(--green)':'var(--red)';}
-  updateJournalStats(journalTrades);
-  list.innerHTML=journalTrades.slice(0,50).map(t=>{
-    const cls=t.pnl>0.5?'win':t.pnl<-0.5?'loss':'scratch';
-    const sign=t.pnl>=0?'+':'';
-    const pnlCls=t.pnl>0.5?'pos':t.pnl<-0.5?'neg':'zero';
-    return`<div class="trade-row ${cls}"><div class="tr-ticker">${t.symbol}</div><div class="tr-meta"><div class="tr-prices">$${t.entry.toFixed(2)} → $${t.exit.toFixed(2)} · ${t.qty} shares</div><div class="tr-date">${t.date}</div></div><div class="tr-pnl ${pnlCls}">${sign}$${Math.abs(t.pnl).toFixed(2)}</div></div>`;
-  }).join('');
-}
-function updateJournalStats(trades){
-  const totalPnl=trades.reduce((s,t)=>s+t.pnl,0);
-  const wins=trades.filter(t=>t.pnl>0.5),losses=trades.filter(t=>t.pnl<-0.5);
-  const winRate=trades.length?(wins.length/trades.length*100):0;
-  const grossW=wins.reduce((s,t)=>s+t.pnl,0),grossL=Math.abs(losses.reduce((s,t)=>s+t.pnl,0));
-  const pf=grossL>0?grossW/grossL:grossW>0?999:0;
-  const avgW=wins.length?grossW/wins.length:0,avgL=losses.length?grossL/losses.length:0;
-  const pnlEl=document.getElementById('j-total-pnl');if(pnlEl){pnlEl.textContent=(totalPnl>=0?'+':'')+'$'+totalPnl.toFixed(2);pnlEl.className='jstat-val '+(totalPnl>=0?'green':'red');}
-  const wrEl=document.getElementById('j-winrate');if(wrEl){wrEl.textContent=trades.length?winRate.toFixed(1)+'%':'—';wrEl.className='jstat-val '+(winRate>=50?'green':winRate>0?'gold':'');}
-  const pfEl=document.getElementById('j-pf');if(pfEl){pfEl.textContent=pf>0?pf.toFixed(2):'—';pfEl.className='jstat-val '+(pf>=1.5?'green':pf>=1?'gold':pf>0?'red':'');}
-  const wlEl=document.getElementById('j-avgwl');if(wlEl)wlEl.textContent=avgW>0?'+$'+avgW.toFixed(2)+' / -$'+avgL.toFixed(2):'—';
+
+async function journalSave() {
+  localStorage.setItem(JOURNAL_KEY, JSON.stringify(journalTrades));
+  try {
+    await fetch('/api/journal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(journalTrades),
+    });
+  } catch(e) { console.log('[Journal] Backend sync failed'); }
 }
 
-// ─── INIT ────────────────────────────────────────
-function init(){
-  if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
-  checkAuth();journalLoad();updateClock();setInterval(updateClock,1000);
-  ['dvol','frot','gap','float'].forEach(updateSliderDisplay);
-  document.getElementById('sz-account').value=sizerAccount;
-  document.getElementById('sz-account-display').textContent='$'+sizerAccount.toLocaleString('en-US',{maximumFractionDigits:0});
-  const savedRiskLabel=(sizerRiskPct*100).toString().replace(/\.0$/,'')+'%';
-  document.querySelectorAll('.risk-btn').forEach(b=>{b.classList.toggle('active',b.textContent===savedRiskLabel)});
-  document.getElementById('page-scanner').style.display='block';
-  fetchLiveData();connectWS();STATE.refreshTimer=setInterval(fetchLiveData,STATE.refreshRate);
+function importCSV(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const lines   = e.target.result.split('\n').filter(Boolean);
+    const headers = lines[0].split(',').map(h => h.trim());
+    const idx = h => headers.indexOf(h);
+    const existing = new Set(journalTrades.map(t => t.id));
+    let added = 0;
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(','); if (cols.length < 8) continue;
+      const id = cols[idx('Position ID')]?.trim(); if (!id || existing.has(id)) continue;
+      journalTrades.push({
+        id, date:   cols[idx('Date')]?.trim(),       symbol: cols[idx('Symbol')]?.trim(),
+        side:       cols[idx('Side')]?.trim(),        qty:    parseInt(cols[idx('Quantity')]) || 0,
+        entry:      parseFloat(cols[idx('Entry Price')]) || 0,
+        exit:       parseFloat(cols[idx('Exit Price')]) || 0,
+        pnl:        parseFloat(cols[idx('P&L')]) || 0,
+        notes:      cols[idx('Notes')]?.trim() || '',
+      });
+      added++;
+    }
+    journalTrades.sort((a, b) => new Date(b.date) - new Date(a.date));
+    journalSave(); renderJournal(); event.target.value = '';
+    alert(added + ' new trades imported');
+  };
+  reader.readAsText(file);
 }
+
+function exportCSV() {
+  if (!journalTrades.length) { alert('No trades to export'); return; }
+  const headers = 'Position ID,Date,Symbol,Side,Quantity,Entry Price,Exit Price,P&L,Commission,Notes';
+  const rows    = journalTrades.map(t =>
+    [t.id, t.date, t.symbol, t.side || 'Long', t.qty, t.entry, t.exit, t.pnl, '0.00', t.notes || ''].join(',')
+  );
+  const blob = new Blob([[headers, ...rows].join('\n')], { type:'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'scanny_trades_' + new Date().toISOString().split('T')[0] + '.csv';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+function renderJournal() {
+  const list = document.getElementById('trade-list'); if (!list) return;
+  if (!journalTrades.length) {
+    list.innerHTML = '<div class="journal-empty">No trades yet.<br/>Import a TradrLedger CSV<br/>to see your stats here.</div>';
+    updateJournalStats([]);
+    return;
+  }
+
+  const today      = new Date().toISOString().split('T')[0];
+  const todayTrades= journalTrades.filter(t => t.date === today);
+  const todayPnl   = todayTrades.reduce((s, t) => s + t.pnl, 0);
+  const dailyLimit = getDailyLossLimit();
+
+  let streak = 0;
+  for (const t of journalTrades) { if (t.pnl < 0) streak++; else break; }
+  document.getElementById('streak-banner')?.classList.toggle('show', streak >= 2);
+
+  const lossToday = Math.abs(Math.min(todayPnl, 0));
+  const pct       = Math.min((lossToday / dailyLimit) * 100, 100);
+  const fill      = document.getElementById('dlb-fill');
+  if (fill) { fill.style.width = pct + '%'; fill.className = 'dlb-fill' + (pct >= 100 ? ' danger' : pct >= 60 ? ' warn' : ''); }
+
+  const maxEl = document.getElementById('dlb-max');
+  if (maxEl) maxEl.textContent = '$' + dailyLimit.toFixed(0);
+
+  const usedEl = document.getElementById('dlb-used');
+  if (usedEl) usedEl.textContent = '$' + lossToday.toFixed(2);
+
+  const tradesEl = document.getElementById('dlb-trades');
+  if (tradesEl) tradesEl.textContent = todayTrades.length + ' trade' + (todayTrades.length !== 1 ? 's' : '') + ' today';
+
+  const todayPnlEl = document.getElementById('dlb-today-pnl');
+  if (todayPnlEl) {
+    todayPnlEl.textContent = (todayPnl >= 0 ? '+' : '') + '$' + todayPnl.toFixed(2);
+    todayPnlEl.style.color = todayPnl >= 0 ? 'var(--green)' : 'var(--red)';
+  }
+
+  updateJournalStats(journalTrades);
+
+  list.innerHTML = journalTrades.slice(0, 50).map(t => {
+    const cls    = t.pnl > 0.5 ? 'win' : t.pnl < -0.5 ? 'loss' : 'scratch';
+    const sign   = t.pnl >= 0 ? '+' : '';
+    const pnlCls = t.pnl > 0.5 ? 'pos' : t.pnl < -0.5 ? 'neg' : 'zero';
+    return `<div class="trade-row ${cls}">
+      <div class="tr-ticker">${t.symbol}</div>
+      <div class="tr-meta">
+        <div class="tr-prices">$${t.entry.toFixed(2)} → $${t.exit.toFixed(2)} · ${t.qty} shares</div>
+        <div class="tr-date">${t.date}</div>
+      </div>
+      <div class="tr-pnl ${pnlCls}">${sign}$${Math.abs(t.pnl).toFixed(2)}</div>
+    </div>`;
+  }).join('');
+}
+
+function updateJournalStats(trades) {
+  const totalPnl = trades.reduce((s, t) => s + t.pnl, 0);
+  const wins     = trades.filter(t => t.pnl > 0.5);
+  const losses   = trades.filter(t => t.pnl < -0.5);
+  const winRate  = trades.length ? (wins.length / trades.length * 100) : 0;
+  const grossW   = wins.reduce((s, t) => s + t.pnl, 0);
+  const grossL   = Math.abs(losses.reduce((s, t) => s + t.pnl, 0));
+  const pf       = grossL > 0 ? grossW / grossL : grossW > 0 ? 999 : 0;
+  const avgW     = wins.length   ? grossW / wins.length   : 0;
+  const avgL     = losses.length ? grossL / losses.length : 0;
+
+  const pnlEl = document.getElementById('j-total-pnl');
+  if (pnlEl) { pnlEl.textContent = (totalPnl >= 0 ? '+' : '') + '$' + totalPnl.toFixed(2); pnlEl.className = 'jstat-val ' + (totalPnl >= 0 ? 'green' : 'red'); }
+
+  const wrEl = document.getElementById('j-winrate');
+  if (wrEl) { wrEl.textContent = trades.length ? winRate.toFixed(1) + '%' : '—'; wrEl.className = 'jstat-val ' + (winRate >= 50 ? 'green' : winRate > 0 ? 'gold' : ''); }
+
+  const pfEl = document.getElementById('j-pf');
+  if (pfEl) { pfEl.textContent = pf > 0 ? pf.toFixed(2) : '—'; pfEl.className = 'jstat-val ' + (pf >= 1.5 ? 'green' : pf >= 1 ? 'gold' : pf > 0 ? 'red' : ''); }
+
+  const wlEl = document.getElementById('j-avgwl');
+  if (wlEl) wlEl.textContent = avgW > 0 ? '+$' + avgW.toFixed(2) + ' / -$' + avgL.toFixed(2) : '—';
+}
+
+// ─── ADD TRADE MODAL ─────────────────────────────────────────────────────────
+
+function openAddTrade() {
+  document.getElementById('at-date').value = new Date().toISOString().split('T')[0];
+  ['at-ticker','at-entry','at-exit','at-shares'].forEach(id => document.getElementById(id).value = '');
+  const prev = document.getElementById('at-pnl-preview');
+  prev.textContent = '—'; prev.style.color = 'var(--dim)';
+  document.getElementById('add-trade-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('at-ticker').focus(), 100);
+}
+
+function closeAddTradeModal() { document.getElementById('add-trade-overlay').classList.remove('open'); }
+function closeAddTrade(e)     { if (e.target === document.getElementById('add-trade-overlay')) closeAddTradeModal(); }
+
+function previewPnl() {
+  const entry  = parseFloat(document.getElementById('at-entry').value)  || 0;
+  const exit   = parseFloat(document.getElementById('at-exit').value)   || 0;
+  const shares = parseInt(document.getElementById('at-shares').value)   || 0;
+  const el     = document.getElementById('at-pnl-preview');
+  if (!entry || !exit || !shares) { el.textContent = '—'; el.style.color = 'var(--dim)'; return; }
+  const pnl = parseFloat(((exit - entry) * shares).toFixed(2));
+  el.textContent = (pnl >= 0 ? '+' : '') + '$' + Math.abs(pnl).toFixed(2);
+  el.style.color = pnl > 0 ? 'var(--green)' : pnl < 0 ? 'var(--red)' : 'var(--dim)';
+}
+
+function submitAddTrade() {
+  const ticker = document.getElementById('at-ticker').value.trim().toUpperCase();
+  const entry  = parseFloat(document.getElementById('at-entry').value);
+  const exit   = parseFloat(document.getElementById('at-exit').value);
+  const shares = parseInt(document.getElementById('at-shares').value);
+  const date   = document.getElementById('at-date').value;
+  if (!ticker || !entry || !exit || !shares || !date) { alert('Fill in all fields'); return; }
+  const pnl = parseFloat(((exit - entry) * shares).toFixed(2));
+  journalTrades.unshift({ id:'M'+Date.now(), date, symbol:ticker, side:'Long', qty:shares, entry, exit, pnl, notes:'' });
+  journalSave(); renderJournal(); closeAddTradeModal();
+}
+
+// ─── PIN ─────────────────────────────────────────────────────────────────────
+
+const PIN_KEY  = 'sb_auth';
+const PIN_CODE = '1337';
+let pinEntry   = '';
+
+function pinKey(d) {
+  if (pinEntry.length >= 4) return;
+  pinEntry += d;
+  updatePinDots();
+  if (pinEntry.length === 4) setTimeout(checkPin, 120);
+}
+
+function pinDel() {
+  pinEntry = pinEntry.slice(0, -1);
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+  document.querySelectorAll('.pin-dot').forEach(d => d.classList.remove('error'));
+}
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById('pd' + i);
+    dot.classList.toggle('filled', i < pinEntry.length);
+    dot.classList.remove('error');
+  }
+}
+
+function checkPin() {
+  if (pinEntry === PIN_CODE) {
+    localStorage.setItem(PIN_KEY, '1');
+    document.getElementById('pin-screen').classList.add('hidden');
+  } else {
+    document.querySelectorAll('.pin-dot').forEach(d => d.classList.add('error'));
+    document.getElementById('pin-error').textContent = 'Incorrect PIN';
+    setTimeout(() => { pinEntry = ''; updatePinDots(); document.getElementById('pin-error').textContent = ''; }, 800);
+  }
+}
+
+function checkAuth() {
+  if (localStorage.getItem(PIN_KEY) === '1') document.getElementById('pin-screen').classList.add('hidden');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+
+function init() {
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+  checkAuth();
+  journalLoad();
+  updateClock();
+  setInterval(updateClock, 1000);
+  ['dvol','frot','gap','float'].forEach(updateSliderDisplay);
+
+  // Restore persisted sizer state
+  document.getElementById('sz-account').value = sizerAccount;
+  document.getElementById('sz-account-display').textContent = '$' + sizerAccount.toLocaleString('en-US', { maximumFractionDigits:0 });
+  const savedRiskLabel = (sizerRiskPct * 100).toString().replace(/\.0$/, '') + '%';
+  document.querySelectorAll('.risk-btn').forEach(b => b.classList.toggle('active', b.textContent === savedRiskLabel));
+
+  document.getElementById('page-scanner').style.display = 'block';
+  fetchLiveData();
+  connectWS();
+  // Discovery poll — fallback for clients that can't hold a WebSocket
+  STATE.refreshTimer = setInterval(fetchLiveData, STATE.refreshRate);
+}
+
 init();
 </script>
 
