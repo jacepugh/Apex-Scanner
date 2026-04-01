@@ -40,10 +40,10 @@ const alertRoutes   = require('./routes/alerts');
 
 process.env.DATA_SOURCE = 'polygon';
 
-const { ScannerService } = require('./services/scanner');
-const { NewsService }    = require('./services/news');
-const { CacheService }   = require('./services/cache');
-const store              = require('./services/store');
+const { ScannerService, POOL_FILTERS } = require('./services/scanner');
+const { NewsService }                  = require('./services/news');
+const { CacheService }                 = require('./services/cache');
+const store                            = require('./services/store');
 
 require('dotenv').config();
 
@@ -91,7 +91,6 @@ app.use('/api/pulse',   require('./routes/pulse'));
 app.use('/api/journal', require('./routes/journal'));
 
 // Pulse snapshot — must register before the wildcard below
-// pulseStore is populated by runPulseFetch() at startup and every 60s
 app.get('/api/pulse/all', (req, res) => res.json(pulseStore));
 
 app.get('/api/health', (req, res) => {
@@ -121,7 +120,6 @@ wss.on('connection', (ws, req) => {
   console.log(`[WS] Client connected: ${clientId} (total: ${wsClients.size})`);
   ws.send(JSON.stringify({ type: 'connected', clientId }));
 
-  // Send latest pool immediately on connect so client doesn't wait for next scan
   if (!store.isEmpty()) {
     ws.send(JSON.stringify({ type: 'scan_results', data: store.get(), timestamp: Date.now() }));
   }
@@ -148,10 +146,6 @@ wss.on('connection', (ws, req) => {
   });
 });
 
-/**
- * Broadcast a message to all connected WebSocket clients.
- * Cleans up dead connections in the same pass.
- */
 function broadcast(type, data) {
   const msg = JSON.stringify({ type, data, timestamp: Date.now() });
   let sent  = 0;
@@ -163,19 +157,10 @@ function broadcast(type, data) {
 }
 app.locals.broadcast = broadcast;
 
-// ─── WIDE SCAN FILTERS ───────────────────────────────────────────────────────
-// Backend always scans wide — frontend filters applied at read time via store.filter().
-// These are intentionally loose. Phase 1 will split into POOL_FILTERS / DISPLAY_FILTERS.
-const WIDE_FILTERS = {
-  priceMin:     0.50,
-  priceMax:     25.00,
-  gapMin:       0,
-  floatMax:     500_000_000,
-  dollarVolMin: 0,
-  floatRotMin:  0,
-  rvolMin:      0,
-  excludeEtf:   true,
-};
+// ─── POOL FILTERS ────────────────────────────────────────────────────────────
+// Phase 1: backend always scans against POOL_FILTERS (wide, 3% gap floor).
+// DISPLAY_FILTERS are frontend-only defaults applied at read time via
+// applyFilters() in index.html. Never pass DISPLAY_FILTERS to scanner.scan().
 
 // ─── DISCOVERY SCAN ──────────────────────────────────────────────────────────
 
@@ -192,7 +177,7 @@ async function runScan() {
       return;
     }
 
-    const results   = await scanner.scan(WIDE_FILTERS);
+    const results    = await scanner.scan(POOL_FILTERS);
     const isDemoData = results?.length > 0 && results[0].ticker?.startsWith('DEMO');
 
     if (!isDemoData) {
@@ -221,16 +206,12 @@ async function runScan() {
   }
 }
 
-/**
- * Returns discovery scan interval in ms based on current market session.
- * Returns null when market is closed.
- */
 function getDiscoveryInterval() {
   const session = scanner.getMarketSession();
-  if (session === 'premarket')  return 60_000;   // 60s
-  if (session === 'regular')    return 30_000;   // 30s
-  if (session === 'afterhours') return 120_000;  // 2min
-  return null; // closed
+  if (session === 'premarket')  return 60_000;
+  if (session === 'regular')    return 30_000;
+  if (session === 'afterhours') return 120_000;
+  return null;
 }
 
 let scanTimer = null;
@@ -249,10 +230,6 @@ function scheduleScan() {
 }
 
 // ─── FAST PRICE REFRESH ──────────────────────────────────────────────────────
-// Calls scanner.refreshPrices() for currently displayed tickers only.
-// Single Polygon API call — does not trigger enrichment.
-// Broadcasts price_update with a lightweight { ticker -> price } map.
-// Paused outside 4:00am–10:30am ET window.
 
 let priceRefreshTimer    = null;
 let priceRefreshRunning  = false;
@@ -267,11 +244,7 @@ async function runPriceRefresh() {
     const updates = await scanner.refreshPrices(tickers);
     if (Object.keys(updates).length === 0) return;
 
-    // Merge into store so REST polling clients also get fresh prices
     store.applyPriceUpdates(updates);
-
-    // Broadcast lightweight price_update — frontend merges into card prices
-    // without re-rendering the full list
     broadcast('price_update', updates);
   } catch (err) {
     console.error('[Price Refresh] Error:', err.message);
@@ -280,26 +253,20 @@ async function runPriceRefresh() {
   }
 }
 
-/**
- * Returns price refresh interval in ms based on current market session.
- * Returns null outside the 4:00am–10:30am ET active window.
- * After 10:30am prices matter less — discovery scan covers it at 30s.
- */
 function getPriceRefreshInterval() {
   const now   = new Date();
   const etH   = parseInt(now.toLocaleString('en-US', { timeZone: 'America/New_York', hour: '2-digit', hour12: false }));
   const etM   = parseInt(now.toLocaleString('en-US', { timeZone: 'America/New_York', minute: '2-digit' }));
   const mins  = etH * 60 + etM;
-  if (mins >= 240 && mins < 570)  return 10_000; // pre-market: 10s
-  if (mins >= 570 && mins < 630)  return 5_000;  // 9:30–10:30am: 5s
-  return null; // outside active window — pause
+  if (mins >= 240 && mins < 570)  return 10_000;
+  if (mins >= 570 && mins < 630)  return 5_000;
+  return null;
 }
 
 function schedulePriceRefresh() {
   if (priceRefreshTimer) clearTimeout(priceRefreshTimer);
   const interval = getPriceRefreshInterval();
   if (!interval) {
-    // Outside active window — recheck in 5 min in case we cross into pre-market
     priceRefreshTimer = setTimeout(schedulePriceRefresh, 300_000);
     return;
   }
@@ -310,8 +277,6 @@ function schedulePriceRefresh() {
 }
 
 // ─── PULSE SCHEDULER ─────────────────────────────────────────────────────────
-// Market context bar: SPY, QQQ, IWM, VIX, XBI, BTC
-// Runs every 60s regardless of scan state — small payload, separate concern.
 
 const PULSE_SYMBOLS = [
   { sym: 'SPY', poly: 'SPY'       },
@@ -322,8 +287,6 @@ const PULSE_SYMBOLS = [
   { sym: 'BTC', poly: 'X:BTCUSD'  },
 ];
 
-// pulseStore populated at startup and every 60s
-// Referenced by /api/pulse/all route above via closure
 const pulseStore = {};
 
 async function runPulseFetch() {
@@ -331,7 +294,7 @@ async function runPulseFetch() {
   if (!apiKey) return;
 
   for (const { sym, poly } of PULSE_SYMBOLS) {
-    if (poly.startsWith('X:')) continue; // BTC handled via CoinGecko below
+    if (poly.startsWith('X:')) continue;
     try {
       const url = poly.startsWith('I:')
         ? `https://api.polygon.io/v2/snapshot/locale/us/markets/indices/tickers/${poly}?apiKey=${apiKey}`
@@ -363,11 +326,9 @@ async function runPulseFetch() {
       }
     } catch (e) { /* keep stale value */ }
 
-    // Small delay between pulse calls — these aren't part of the scan budget
     await new Promise(r => setTimeout(r, 300));
   }
 
-  // BTC via CoinGecko — free, no key, works 24/7
   try {
     const res = await axios.get(
       'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true',
@@ -401,17 +362,15 @@ server.listen(PORT, async () => {
   console.log(`\n🚀 APEX SCANNER running on http://localhost:${PORT}`);
   console.log(`📡 WebSocket server active`);
   console.log(`🔑 Data source: ${process.env.DATA_SOURCE || 'demo'}`);
-  console.log(`📦 Store: wide scan pool, filters applied at read time`);
+  console.log(`📦 Store: wide scan pool via POOL_FILTERS, display filters applied client-side`);
   console.log(`⚡ Price refresh: 10s pre-market, 5s market open (4am–10:30am ET)\n`);
 
-  // Initial scan and pulse on boot — don't wait for first timer tick
   await runScan();
   scheduleScan();
 
   await runPulseFetch();
   schedulePulse();
 
-  // Price refresh starts after initial scan so there are tickers to refresh
   schedulePriceRefresh();
 });
 
