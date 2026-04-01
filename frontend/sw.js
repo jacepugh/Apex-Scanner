@@ -1,16 +1,17 @@
 /**
  * Scanny Boi — Service Worker
- * Caches app shell for instant load
- * API calls always go to network — never cached
+ * Caches static assets for instant load
+ * API calls and HTML document always go to network — never cached
+ * Bumping cache version forces old cache wipe on next load
  */
 
-const CACHE_NAME = 'scanny-boi-v3';
-const SHELL = [
-  '/',
-  '/index.html',
-];
+const CACHE_NAME = 'scanny-boi-v4';
 
-// Install — cache app shell
+// App shell — fonts and manifest only
+// index.html intentionally excluded — always fetched fresh from network
+const SHELL = [];
+
+// Install — nothing to pre-cache, activate immediately
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_NAME)
@@ -19,7 +20,7 @@ self.addEventListener('install', e => {
   );
 });
 
-// Activate — clean up old caches
+// Activate — clean up old caches (v1, v2, v3)
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
@@ -29,21 +30,29 @@ self.addEventListener('activate', e => {
 });
 
 // Fetch strategy:
-// - API calls → network only, never cache
-// - App shell → cache first, fall back to network
+// - API calls       → network only, never cache
+// - HTML navigate   → network only, fall back to cache if offline
+// - Everything else → cache first, fall back to network (fonts, icons, manifest)
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
   // Always network for API calls
   if (url.pathname.startsWith('/api/')) return;
 
-  // Cache first for app shell
+  // Always network for page navigation — ensures every deploy is live immediately
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request).catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
+
+  // Cache first for static assets (fonts, icons, manifest)
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
       return fetch(e.request).then(res => {
-        // Cache successful GET responses for shell files only
-        if (res.ok && e.request.method === 'GET' && !url.pathname.startsWith('/api/')) {
+        if (res.ok && e.request.method === 'GET') {
           const clone = res.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
         }
