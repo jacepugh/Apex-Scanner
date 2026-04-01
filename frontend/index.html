@@ -17,6 +17,7 @@
   --border:#1e2d42; --border2:#263850;
   --text:#ddeeff; --dim:#3a5570; --mid:#6a90b0;
   --accent:#00d4ff; --green:#00e676; --red:#ff4060; --gold:#ffcc00; --purple:#c084fc;
+  --asetup:#ff9500;
   --mono:'DM Mono',monospace; --head:'Rajdhani',sans-serif; --body:'Inter',sans-serif;
   --bebas:'Bebas Neue',sans-serif;
   --safe-top:env(safe-area-inset-top,0px); --safe-bot:env(safe-area-inset-bottom,0px);
@@ -160,6 +161,35 @@ body.pulse-active #page-scanner{display:none}
 body.pulse-active #page-sizer{display:none}
 body.pulse-active #page-pulse{display:block}
 
+/* ── A-SETUP BADGE ── */
+/* Unmistakable on mobile — full-width banner at top of card, not a chip */
+.asetup-banner{
+  display:flex;align-items:center;gap:8px;
+  padding:7px 14px;
+  background:linear-gradient(90deg, rgba(255,149,0,0.18) 0%, rgba(255,149,0,0.06) 100%);
+  border-bottom:1px solid rgba(255,149,0,0.35);
+  font-family:var(--mono);font-size:10px;font-weight:500;
+  letter-spacing:0.1em;text-transform:uppercase;color:var(--asetup);
+}
+.asetup-banner .as-star{
+  font-size:14px;
+  animation:asPulse 2s ease-in-out infinite;
+}
+@keyframes asPulse{
+  0%,100%{opacity:1;transform:scale(1)}
+  50%{opacity:0.6;transform:scale(0.85)}
+}
+.asetup-banner .as-label{letter-spacing:0.14em}
+.asetup-banner .as-score{
+  margin-left:auto;
+  font-size:9px;color:rgba(255,149,0,0.5);letter-spacing:0.06em;
+}
+/* Card border highlight when A-setup */
+.stock-card.asetup-active{
+  border-color:rgba(255,149,0,0.5);
+  box-shadow:0 0 0 1px rgba(255,149,0,0.15);
+}
+
 /* ── STOCK CARDS ── */
 .stock-card{margin:8px 12px;background:var(--bg1);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:border-color 0.15s;}
 .stock-card.card-new{animation:cardIn 0.3s ease both}
@@ -172,6 +202,7 @@ body.pulse-active #page-pulse{display:block}
 .card-ticker{font-family:var(--head);font-weight:700;font-size:22px;letter-spacing:0.03em;color:var(--text);line-height:1}
 .card-ticker.low-float{color:var(--green)}.card-ticker.ultra-float{color:var(--gold)}
 .card-float-tag{font-family:var(--mono);font-size:9px;color:var(--mid);margin-top:2px}
+.card-float-tag .float-est{font-size:8px;color:var(--dim);opacity:0.7}
 .card-float-tag.lf{color:var(--green)}.card-float-tag.uf{color:var(--gold)}
 .card-middle{flex:1;display:flex;flex-direction:column;gap:5px}
 .card-price-row{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
@@ -216,7 +247,7 @@ body.pulse-active #page-pulse{display:block}
 .card-pin{font-size:14px;cursor:pointer;opacity:0.4;transition:opacity 0.15s;line-height:1;padding:2px}
 .card-pin.pinned{opacity:1}.card-pin:active{transform:scale(1.3)}
 
-/* ── PRICE STALENESS (Phase 0) ── */
+/* ── PRICE STALENESS ── */
 .price-stale-chip{display:inline-flex;align-items:center;gap:3px;font-family:var(--mono);font-size:8px;letter-spacing:0.08em;text-transform:uppercase;padding:2px 6px;border-radius:3px;background:rgba(255,204,0,0.08);color:var(--gold);border:1px solid rgba(255,204,0,0.2);}
 .stock-card.price-stale{opacity:0.65}
 .stock-card.price-stale .card-price{color:var(--gold)}
@@ -427,7 +458,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
   </div>
 </div>
 
-<!-- ERROR BANNER (dev tool — remove in production) -->
+<!-- ERROR BANNER (dev tool) -->
 <div id="errbanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#ff4060;color:#fff;font-family:monospace;font-size:11px;padding:8px 12px;white-space:pre-wrap;word-break:break-all;max-height:40vh;overflow-y:auto"></div>
 <script>
 window.onerror = function(msg,src,line,col,err) {
@@ -595,14 +626,15 @@ window.addEventListener('unhandledrejection', function(e) {
     <div class="dual-inputs">
       <input type="number" class="mini-input" id="f-price-min" value="0.50" placeholder="Min $" step="0.5"/>
       <span>—</span>
-      <input type="number" class="mini-input" id="f-price-max" value="25" placeholder="Max $" step="1"/>
+      <!-- Phase 1: priceMax default lowered to $5 -->
+      <input type="number" class="mini-input" id="f-price-max" value="5" placeholder="Max $" step="1"/>
     </div>
   </div>
   <div class="drawer-section">
     <div class="ds-label">Activity</div>
     <div class="filter-item">
-      <div class="fi-header"><div class="fi-label">Min Dollar Volume</div><div class="fi-val" id="fv-dvol">$0</div></div>
-      <input type="range" id="f-dvol" min="0" max="2000000" step="25000" value="0" oninput="updateSliderDisplay('dvol')"/>
+      <div class="fi-header"><div class="fi-label">Min Dollar Volume</div><div class="fi-val" id="fv-dvol">$100K</div></div>
+      <input type="range" id="f-dvol" min="0" max="2000000" step="25000" value="100000" oninput="updateSliderDisplay('dvol')"/>
     </div>
     <div class="filter-item">
       <div class="fi-header"><div class="fi-label">Min Float Rotation</div><div class="fi-val" id="fv-frot">0%</div></div>
@@ -612,8 +644,8 @@ window.addEventListener('unhandledrejection', function(e) {
   <div class="drawer-section">
     <div class="ds-label">Gap %</div>
     <div class="filter-item">
-      <div class="fi-header"><div class="fi-label">Minimum Gap</div><div class="fi-val" id="fv-gap">5%</div></div>
-      <input type="range" id="f-gap" min="0" max="60" step="1" value="5" oninput="updateSliderDisplay('gap')"/>
+      <div class="fi-header"><div class="fi-label">Minimum Gap</div><div class="fi-val" id="fv-gap">7%</div></div>
+      <input type="range" id="f-gap" min="0" max="60" step="1" value="7" oninput="updateSliderDisplay('gap')"/>
     </div>
   </div>
   <div class="drawer-section">
@@ -687,13 +719,9 @@ window.addEventListener('unhandledrejection', function(e) {
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 
-const BACKEND = '';
-
-// Derive WebSocket URL from current host so this works on any domain/Railway URL
-// without hardcoding. Falls back to wss for https, ws for http.
+const BACKEND    = '';
 const WS_BACKEND = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host;
 
-// Catalyst type → dot color (matches CSS cat-* classes)
 const CAT_COLORS = {
   fda:      '#00e676',
   earnings: '#c084fc',
@@ -711,31 +739,70 @@ const STATE = {
   expanded:        new Set(),
   currentPage:     'scanner',
   isLive:          false,
-  refreshRate:     30000,       // discovery scan poll rate (fallback to REST)
-  refreshTimer:    null,        // handle for discovery setInterval
+  refreshRate:     30000,
+  refreshTimer:    null,
   renderedTickers: [],
   newsWindowHours: 24,
   filters: {
-    priceMin:    0.5,
-    priceMax:    25,
-    dollarVolMin: 0,
-    floatRotMin: 0,
-    gapMin:      5,
-    floatMax:    50_000_000,
-    catalyst:    false,
-    excludeEtf:  true,
+    priceMin:     0.5,
+    priceMax:     5,        // Phase 1: lowered from 25 to 5
+    dollarVolMin: 100_000,  // Phase 1: display default $100K
+    floatRotMin:  0,
+    gapMin:       7,        // Phase 1: display default 7%
+    floatMax:     50_000_000,
+    catalyst:     false,
+    excludeEtf:   true,
   },
   presets: {
-    ignition:  { priceMin:1,   priceMax:20, dollarVolMin:500000, floatRotMin:15, gapMin:10, floatMax:10_000_000  },
-    premarket: { priceMin:0.5, priceMax:25, dollarVolMin:150000, floatRotMin:5,  gapMin:5,  floatMax:50_000_000  },
+    ignition:  { priceMin:1,   priceMax:5,  dollarVolMin:500000, floatRotMin:15, gapMin:10, floatMax:10_000_000  },
+    premarket: { priceMin:0.5, priceMax:5,  dollarVolMin:100000, floatRotMin:5,  gapMin:7,  floatMax:50_000_000  },
     midday:    { priceMin:2,   priceMax:25, dollarVolMin:250000, floatRotMin:0,  gapMin:3,  floatMax:100_000_000 },
   },
 };
 
+// ─── A-SETUP SCORING (client mirror) ─────────────────────────────────────────
+// Mirrors scanner.js scoreASetup so patchCardData can re-evaluate on
+// price_update without waiting for the next full scan_results broadcast.
+// Thresholds must stay in sync with ASETUP_THRESHOLDS in scanner.js.
+
+const ASETUP_THRESHOLDS = {
+  gapMin:          10,
+  floatMax:        20_000_000,
+  rvolMin:         5,
+  dollarVolMin:    250_000,
+  requireCatalyst: true,
+};
+
+function scoreASetup(s) {
+  let score = 0;
+  let isASetup = true;
+
+  if (s.gapPct >= ASETUP_THRESHOLDS.gapMin) score++;
+  else isASetup = false;
+
+  if (s.float != null) {
+    if (s.float <= ASETUP_THRESHOLDS.floatMax) score++;
+    else isASetup = false;
+  }
+  // float null → soft pass
+
+  if (s.rvol !== null) {
+    if (s.rvol >= ASETUP_THRESHOLDS.rvolMin) score++;
+    else isASetup = false;
+  }
+  // rvol null → soft pass
+
+  if (s.dollarVolume >= ASETUP_THRESHOLDS.dollarVolMin) score++;
+  else isASetup = false;
+
+  if (s.catalyst) score++;
+  else if (ASETUP_THRESHOLDS.requireCatalyst) isASetup = false;
+
+  return { score, isASetup };
+}
+
 // ─── SENTIMENT HELPERS ───────────────────────────────────────────────────────
 
-// Returns dominant sentiment across recent news for a stock.
-// 'negative' wins even when mixed — protects against fade traps.
 function getStockSentiment(s) {
   if (!s.news?.length) return null;
   const sentiments = s.news
@@ -754,7 +821,6 @@ function sentimentMeta(sent) {
   return { emoji:'·', cls:'', dotCls:'dot-unknown', chipCls:'' };
 }
 
-// Builds catalyst chip HTML with sentiment dot and optional glow border.
 function buildCatChipHtml(s) {
   const cat = getEffectiveCatalyst(s);
   const sm  = sentimentMeta(getStockSentiment(s));
@@ -806,7 +872,6 @@ async function fetchPulse() {
   try {
     const res = await fetch('/api/pulse/all');
     const all = await res.json();
-    // Render whatever symbols the server returns — no hardcoded list needed
     Object.keys(all).forEach(sym => {
       try { const d = all[sym]; if (d?.price > 0) renderPulseTile(sym, d); } catch(e) {}
     });
@@ -864,13 +929,11 @@ function showPage(page) {
     renderJournal();
   } else {
     document.getElementById('page-scanner').style.display = 'block';
-    // Only fetch if data is older than 60s — avoid hammering on every tab switch
     const age = store_lastFetchTime ? Date.now() - store_lastFetchTime : Infinity;
     if (age > 60_000) manualRefresh();
   }
 }
 
-// Tracks last fetch time to debounce tab-switch refetches
 let store_lastFetchTime = null;
 
 // ─── FILTERS ─────────────────────────────────────────────────────────────────
@@ -881,8 +944,6 @@ function applyFilters() {
     if (!s.price || s.price < f.priceMin || s.price > f.priceMax) return false;
     if (f.dollarVolMin > 0 && s.dollarVolume > 0 && s.dollarVolume < f.dollarVolMin) return false;
     if (f.floatRotMin > 0 && s.floatRotation != null && s.floatRotation < f.floatRotMin) return false;
-    // Phase 0 fix: only enforce gapMin when prevClose is known.
-    // When prevClose=0 we have no baseline — skip the check rather than drop the ticker.
     if (f.gapMin > 0 && s.prevClose > 0 && s.gapPct < f.gapMin) return false;
     if (s.float && s.float > f.floatMax) return false;
     if (f.catalyst && !getEffectiveCatalyst(s)) return false;
@@ -902,29 +963,50 @@ function applyFilters() {
 }
 
 // ─── CARD META HELPER ────────────────────────────────────────────────────────
-// Shared between buildCardHtml and patchCardData to avoid duplicating logic.
 
 function getCardMeta(s) {
   const floatM   = s.float ? s.float / 1e6 : null;
   const isUltra  = floatM && floatM < 10;
   const isLow    = floatM && floatM < 20;
   const gapTier  = s.gapTier || 0;
+
+  // Phase 1: float disclaimer — (est.) label on all float tags
+  // shares outstanding is not true float (see scanner.js FLOAT DATA NOTE)
+  let floatTag = '';
+  if (isUltra) {
+    floatTag = '<div class="card-float-tag uf">★ ULTRA <span class="float-est">(est.)</span></div>';
+  } else if (isLow) {
+    floatTag = '<div class="card-float-tag lf">LOW FLOAT <span class="float-est">(est.)</span></div>';
+  } else if (floatM) {
+    floatTag = `<div class="card-float-tag">${floatM.toFixed(1)}M <span class="float-est">(est.)</span></div>`;
+  }
+
+  // Phase 1: A-setup — read from s.aSetup (set by scoreASetup on backend)
+  // or re-score client-side if missing (e.g. older cached data)
+  const aSetup = s.aSetup || scoreASetup(s);
+
   return {
     floatM,
     isUltra,
     isLow,
     gapTier,
+    aSetup,
     tickCls:    isUltra ? 'ultra-float' : isLow ? 'low-float' : '',
     gapTierCls: gapTier >= 3 ? 'tier3' : gapTier >= 2 ? 'tier2' : '',
     frotCls:    s.floatRotation >= 25 ? 'hig' : s.floatRotation >= 10 ? 'hi' : '',
-    floatTag:   isUltra
-      ? '<div class="card-float-tag uf">★ ULTRA LOW FLOAT</div>'
-      : isLow
-        ? '<div class="card-float-tag lf">LOW FLOAT</div>'
-        : floatM
-          ? `<div class="card-float-tag">${floatM.toFixed(1)}M float</div>`
-          : '',
+    floatTag,
   };
+}
+
+// ─── A-SETUP BANNER HTML ─────────────────────────────────────────────────────
+
+function buildASetupBannerHtml(aSetup) {
+  if (!aSetup?.isASetup) return '';
+  return `<div class="asetup-banner">
+    <span class="as-star">★</span>
+    <span class="as-label">A-Setup</span>
+    <span class="as-score">${aSetup.score}/5</span>
+  </div>`;
 }
 
 // ─── CARD PATCHING ───────────────────────────────────────────────────────────
@@ -941,12 +1023,10 @@ function patchCards() {
   empty.style.display = 'none';
   const newTickers = STATE.filtered.map(s => s.ticker);
 
-  // Remove cards no longer in filtered list
   STATE.renderedTickers.forEach(t => {
     if (!newTickers.includes(t)) document.getElementById('card-' + t)?.remove();
   });
 
-  // Insert new cards / update existing ones in correct order
   newTickers.forEach((ticker, i) => {
     const s        = STATE.filtered[i];
     const existing = document.getElementById('card-' + ticker);
@@ -980,15 +1060,14 @@ function updateTimestamp() {
 }
 
 function patchCardData(cardEl, s) {
-  const { gapTier, gapTierCls, frotCls } = getCardMeta(s);
+  const { gapTier, gapTierCls, frotCls, aSetup } = getCardMeta(s);
 
-  // Phase 0: staleness — dim card and tint price gold when lastTrade is stale
+  // Phase 0: staleness
   cardEl.classList.toggle('price-stale', !!s.priceStale);
 
   const priceEl = cardEl.querySelector('.card-price');
   if (priceEl) {
     priceEl.textContent = '$' + (s.price ? s.price.toFixed(2) : '—');
-    // Remove old staleness chip then re-add if still stale
     cardEl.querySelector('.price-stale-chip')?.remove();
     if (s.priceStale) {
       const chip = document.createElement('span');
@@ -1020,14 +1099,32 @@ function patchCardData(cardEl, s) {
   const catRow = cardEl.querySelector('.card-cat-row');
   if (catRow) catRow.innerHTML = buildCatChipHtml(s);
 
+  // Phase 1: A-setup badge — patch on every price_update so badge reflects
+  // reality as soon as enrichment completes, not just on full card rebuilds.
+  const existingBanner = cardEl.querySelector('.asetup-banner');
+  const cardMain       = cardEl.querySelector('.card-main');
+  if (aSetup.isASetup) {
+    cardEl.classList.add('asetup-active');
+    if (!existingBanner && cardMain) {
+      // Insert banner before card-main (top of card, above price row)
+      const banner = document.createElement('div');
+      banner.innerHTML = buildASetupBannerHtml(aSetup);
+      cardEl.insertBefore(banner.firstChild, cardMain);
+    } else if (existingBanner) {
+      // Update score in case it changed after further enrichment
+      const scoreEl = existingBanner.querySelector('.as-score');
+      if (scoreEl) scoreEl.textContent = aSetup.score + '/5';
+    }
+  } else {
+    cardEl.classList.remove('asetup-active');
+    existingBanner?.remove();
+  }
+
   cardEl.querySelector('.card-sizeit')?.setAttribute('onclick', `event.stopPropagation();openSizerWithPrice(${s.price})`);
   cardEl.querySelector('.card-rh')?.setAttribute('href', `https://robinhood.com/stocks/${s.ticker}`);
 }
 
 // ─── ENTRY ZONE ──────────────────────────────────────────────────────────────
-// Hardcoded PM High Reclaim pattern — Phase 3 will replace this with a
-// named ENTRY_PATTERNS registry supporting ORB Breakout and VWAP Reclaim.
-// Constants: 0.97 = 3% below PMH (entry low), 1.002 = 0.2% above PMH (entry trigger)
 
 function calcEntryZone(s) {
   if (!s.pmHigh || !s.prevClose || s.pmHigh <= 0 || s.prevClose <= 0) return null;
@@ -1047,11 +1144,14 @@ function calcEntryZone(s) {
 // ─── CARD HTML ───────────────────────────────────────────────────────────────
 
 function buildCardHtml(s, i, isNew = false) {
-  const { tickCls, floatTag, frotCls, gapTierCls, gapTier, floatM } = getCardMeta(s);
+  const { tickCls, floatTag, frotCls, gapTierCls, gapTier, floatM, aSetup } = getCardMeta(s);
   const isPmh   = s.abovePmh || s.breakingPmh;
   const isOpen  = STATE.expanded.has(s.ticker);
   const catChip = buildCatChipHtml(s);
   const ez      = calcEntryZone(s);
+
+  // Phase 1: A-setup banner at top of card — only when criteria met
+  const aSetupBanner = buildASetupBannerHtml(aSetup);
 
   const entryZoneHtml = ez ? `
     <div class="entry-zone">
@@ -1076,7 +1176,7 @@ function buildCardHtml(s, i, isNew = false) {
         <div class="dg-item"><div class="dg-label">RVOL (ref)</div><div class="dg-val">${s.rvol != null ? s.rvol + '×' : 'N/A'}</div></div>
         <div class="dg-item"><div class="dg-label">PM High</div><div class="dg-val ${isPmh ? 'gold' : ''}">$${s.pmHigh || '—'}</div></div>
         <div class="dg-item"><div class="dg-label">PM Low</div><div class="dg-val">$${s.pmLow || '—'}</div></div>
-        ${floatM ? `<div class="dg-item"><div class="dg-label">Float</div><div class="dg-val">${floatM.toFixed(1)}M</div></div>` : ''}
+        ${floatM ? `<div class="dg-item"><div class="dg-label">Float <span style="font-size:8px;color:var(--dim)">(est.)</span></div><div class="dg-val">${floatM.toFixed(1)}M</div></div>` : ''}
       </div>
       ${entryZoneHtml}
       <div class="news-section">
@@ -1090,7 +1190,8 @@ function buildCardHtml(s, i, isNew = false) {
       </div>
     </div>`;
 
-  return `<div class="stock-card ${isPmh ? 'pmh-active' : ''} ${isNew ? 'card-new' : ''} ${s.priceStale ? 'price-stale' : ''}" id="card-${s.ticker}" onclick="toggleCard('${s.ticker}')" style="${isNew ? 'animation-delay:' + i * 0.04 + 's' : ''}">
+  return `<div class="stock-card ${isPmh ? 'pmh-active' : ''} ${isNew ? 'card-new' : ''} ${s.priceStale ? 'price-stale' : ''} ${aSetup.isASetup ? 'asetup-active' : ''}" id="card-${s.ticker}" onclick="toggleCard('${s.ticker}')" style="${isNew ? 'animation-delay:' + i * 0.04 + 's' : ''}">
+    ${aSetupBanner}
     <div class="card-main">
       <div class="card-ticker-col"><div class="card-ticker ${tickCls}">${s.ticker}</div>${floatTag}</div>
       <div class="card-middle">
@@ -1155,7 +1256,6 @@ function openSizerWithPrice(price) {
   document.getElementById('sz-entry').value = price.toFixed(2);
   document.getElementById('sz-prefill-badge').style.display = 'inline-block';
   document.getElementById('sz-stop').value  = '';
-  // Don't clear existing results — user may be comparing prices
   showPage('sizer');
   setTimeout(() => document.getElementById('sz-stop').focus(), 300);
 }
@@ -1208,12 +1308,12 @@ async function fetchLiveData() {
   showSkeletons();
   try {
     const params = new URLSearchParams({
-      priceMin:    STATE.filters.priceMin,
-      priceMax:    STATE.filters.priceMax,
-      dollarVolMin:STATE.filters.dollarVolMin,
-      floatRotMin: STATE.filters.floatRotMin,
-      gapMin:      STATE.filters.gapMin,
-      floatMax:    STATE.filters.floatMax,
+      priceMin:     STATE.filters.priceMin,
+      priceMax:     STATE.filters.priceMax,
+      dollarVolMin: STATE.filters.dollarVolMin,
+      floatRotMin:  STATE.filters.floatRotMin,
+      gapMin:       STATE.filters.gapMin,
+      floatMax:     STATE.filters.floatMax,
     });
     const res = await fetch(BACKEND + '/api/scanner?' + params);
     if (!res.ok) return;
@@ -1254,7 +1354,6 @@ function connectWS() {
       try {
         const msg = JSON.parse(e.data);
 
-        // Full discovery scan result — re-renders card list
         if (msg.type === 'scan_results' && Array.isArray(msg.data) && msg.data.length > 0) {
           if (msg.data[0].ticker?.startsWith('DEMO')) return;
           STATE.stocks = msg.data;
@@ -1264,9 +1363,7 @@ function connectWS() {
           setScanningState('done');
         }
 
-        // Phase 0: fast price refresh — patches card prices in-place.
-        // Payload: { ticker: { price, lastTradeTime, priceStale, updatedAt } }
-        // Does not re-sort or re-render the list.
+        // Phase 0+1: fast price refresh — patches card prices and A-setup badge in-place.
         if (msg.type === 'price_update' && msg.data) {
           let anyUpdated = false;
           for (const stock of STATE.stocks) {
@@ -1277,6 +1374,8 @@ function connectWS() {
             if (stock.prevClose > 0) {
               stock.change = parseFloat(((u.price - stock.prevClose) / stock.prevClose * 100).toFixed(2));
             }
+            // Re-score A-setup with updated price (gap may have changed)
+            stock.aSetup = scoreASetup(stock);
             anyUpdated = true;
             const cardEl = document.getElementById('card-' + stock.ticker);
             if (cardEl) patchCardData(cardEl, stock);
@@ -1301,7 +1400,7 @@ function applyAndClose() { applyDrawerFilters(); closeFilters(); fetchLiveData()
 
 function applyDrawerFilters() {
   STATE.filters.priceMin    = parseFloat(document.getElementById('f-price-min').value) || 0.5;
-  STATE.filters.priceMax    = parseFloat(document.getElementById('f-price-max').value) || 25;
+  STATE.filters.priceMax    = parseFloat(document.getElementById('f-price-max').value) || 5;
   STATE.filters.dollarVolMin= parseInt(document.getElementById('f-dvol').value) || 0;
   STATE.filters.floatRotMin = parseFloat(document.getElementById('f-frot').value) || 0;
   STATE.filters.gapMin      = parseFloat(document.getElementById('f-gap').value);
@@ -1345,7 +1444,7 @@ function relaxFilters() {
   STATE.filters.gapMin      = 0;
   STATE.filters.dollarVolMin= 0;
   STATE.filters.floatRotMin = 0;
-  STATE.filters.floatMax    = 50_000_000;  // 50M — consistent with display default
+  STATE.filters.floatMax    = 50_000_000;
   STATE.filters.catalyst    = false;
   document.getElementById('f-gap').value   = 0;
   document.getElementById('f-dvol').value  = 0;
@@ -1359,8 +1458,6 @@ function relaxFilters() {
 function openSettings()  { document.getElementById('settings-overlay').classList.add('open'); }
 function closeSettings() { document.getElementById('settings-overlay').classList.remove('open'); }
 
-// Discovery refresh rate — controls the REST poll fallback interval.
-// Price updates arrive faster via WebSocket price_update events.
 function setRefreshRate(ms) {
   const labels = { 8000:'8s', 15000:'15s', 30000:'30s', 60000:'60s' };
   document.querySelectorAll('.rate-pill').forEach(p => {
@@ -1380,8 +1477,6 @@ function manualRefresh() { fetchLiveData(); }
 let sizerAccount = parseFloat(localStorage.getItem('sb_account') || '700');
 let sizerRiskPct = parseFloat(localStorage.getItem('sb_risk')    || '0.015');
 
-// Phase 0: account-relative daily loss limit — 1% of account size.
-// Scales automatically as account grows. Minimum $25 for small accounts.
 function getDailyLossLimit() { return Math.max(25, sizerAccount * 0.01); }
 
 function sizerUpdateAccount() {
@@ -1704,7 +1799,6 @@ function init() {
   setInterval(updateClock, 1000);
   ['dvol','frot','gap','float'].forEach(updateSliderDisplay);
 
-  // Restore persisted sizer state
   document.getElementById('sz-account').value = sizerAccount;
   document.getElementById('sz-account-display').textContent = '$' + sizerAccount.toLocaleString('en-US', { maximumFractionDigits:0 });
   const savedRiskLabel = (sizerRiskPct * 100).toString().replace(/\.0$/, '') + '%';
@@ -1713,7 +1807,6 @@ function init() {
   document.getElementById('page-scanner').style.display = 'block';
   fetchLiveData();
   connectWS();
-  // Discovery poll — fallback for clients that can't hold a WebSocket
   STATE.refreshTimer = setInterval(fetchLiveData, STATE.refreshRate);
 }
 
