@@ -31,11 +31,75 @@
  * should be treated as approximate. A ticker showing 8M shares outstanding may
  * have a true float closer to 5M.
  * TODO: replace with a dedicated float data source in a future phase.
+ *
+ * FILTER ARCHITECTURE (Phase 1)
+ * ------------------------------
+ * Three filter constant tiers:
+ *
+ *   POOL_FILTERS      — wide backend scan, never rendered to frontend.
+ *                       Keeps the store pool large so display filters have
+ *                       something to work with at read time.
+ *
+ *   DISPLAY_FILTERS   — frontend defaults shown to the user on first load.
+ *                       Applied client-side via applyFilters() in index.html.
+ *
+ *   ASETUP_THRESHOLDS — criteria for the A-setup badge. Scored per-ticker
+ *                       after enrichment. Null RVOL does NOT disqualify —
+ *                       missing prevVol is common on the best pre-mkt plays.
  */
 
 'use strict';
 
 const axios = require('axios');
+
+// ---------------------------------------------------------------------------
+// Filter constants — Phase 1 architecture
+// ---------------------------------------------------------------------------
+
+/**
+ * POOL_FILTERS — used by server.js WIDE_FILTERS.
+ * Intentionally loose. Frontend filters applied at read time.
+ * gapMin: 3% (not 0) to prune noise while keeping the pool wide.
+ */
+const POOL_FILTERS = {
+  priceMin:     0.50,
+  priceMax:     25.00,
+  gapMin:       3,
+  floatMax:     500_000_000,
+  dollarVolMin: 0,
+  floatRotMin:  0,
+  rvolMin:      0,
+  excludeEtf:   true,
+};
+
+/**
+ * DISPLAY_FILTERS — defaults the frontend presents to the user.
+ * Synced with STATE.filters defaults and filter drawer initial values in
+ * index.html. priceMax $5 to focus on low-priced momentum setups.
+ */
+const DISPLAY_FILTERS = {
+  priceMin:     0.50,
+  priceMax:     5.00,
+  gapMin:       7,
+  floatMax:     50_000_000,
+  dollarVolMin: 100_000,
+  floatRotMin:  0,
+  rvolMin:      0,
+  excludeEtf:   true,
+};
+
+/**
+ * ASETUP_THRESHOLDS — criteria scored per-ticker after enrichment.
+ * A-setup badge fires when ALL hard criteria are met.
+ * RVOL null does NOT disqualify — see file-level note.
+ */
+const ASETUP_THRESHOLDS = {
+  gapMin:       10,       // gap > 10%
+  floatMax:     20_000_000, // float < 20M shares outstanding
+  rvolMin:      5,         // RVOL > 5x (skipped when null)
+  dollarVolMin: 250_000,   // dollar volume > $250K
+  requireCatalyst: true,   // catalyst must be confirmed
+};
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -98,6 +162,58 @@ const ETF_SET = new Set([
   'UGAZ','UCO','SCO','BITI','BITO','MSTU','MSTX','NVDL','TSLL',
   'ACTS','DFAC','DFAS','DFAU','DFAX','AVUV','AVLV','AVDV',
 ]);
+
+// ---------------------------------------------------------------------------
+// A-setup scoring
+// ---------------------------------------------------------------------------
+
+/**
+ * scoreASetup — scores a ticker against ASETUP_THRESHOLDS.
+ * Called after enrichment so float and catalyst are populated.
+ *
+ * Returns { score: number, isASetup: boolean }
+ *
+ * score   — additive (0–5). Not currently displayed but wired up for
+ *           Phase 3 ranking when multiple A-setups appear simultaneously.
+ * isASetup — true only when ALL hard criteria are met.
+ *
+ * RVOL null rule: if prevVol was unavailable (rvol === null), the RVOL
+ * criterion is treated as a soft pass rather than a disqualifier. The best
+ * pre-market setups often have no prior-day volume baseline — dropping them
+ * for a missing field would eliminate the highest-quality plays.
+ */
+function scoreASetup(s) {
+  let score = 0;
+  let isASetup = true;
+
+  // Gap > threshold (hard)
+  if (s.gapPct >= ASETUP_THRESHOLDS.gapMin) score++;
+  else isASetup = false;
+
+  // Float < threshold (hard — only checked when float is known)
+  if (s.float != null) {
+    if (s.float <= ASETUP_THRESHOLDS.floatMax) score++;
+    else isASetup = false;
+  }
+  // float null → soft pass (enrichment may not have run yet)
+
+  // RVOL (soft when null — see file-level note)
+  if (s.rvol !== null) {
+    if (s.rvol >= ASETUP_THRESHOLDS.rvolMin) score++;
+    else isASetup = false;
+  }
+  // rvol null → neither adds nor subtracts
+
+  // Dollar volume (hard)
+  if (s.dollarVolume >= ASETUP_THRESHOLDS.dollarVolMin) score++;
+  else isASetup = false;
+
+  // Catalyst confirmed (hard)
+  if (s.catalyst) score++;
+  else if (ASETUP_THRESHOLDS.requireCatalyst) isASetup = false;
+
+  return { score, isASetup };
+}
 
 // ---------------------------------------------------------------------------
 // ScannerService
@@ -225,18 +341,15 @@ class ScannerService {
   // -------------------------------------------------------------------------
   async scan(filters = {}) {
     const f = {
-      priceMin:     parseFloat(filters.priceMin     ?? process.env.PRICE_MIN      ?? '0.50'),
-      priceMax:     parseFloat(filters.priceMax     ?? process.env.PRICE_MAX      ?? '25.00'),
-      dollarVolMin: parseFloat(filters.dollarVolMin ?? process.env.DOLLAR_VOL_MIN ?? '0'),
-      floatRotMin:  parseFloat(filters.floatRotMin  ?? process.env.FLOAT_ROT_MIN  ?? '0'),
-      gapMin:       parseFloat(filters.gapMin       ?? process.env.GAP_MIN        ?? '0'),
-      floatMax:     parseInt(  filters.floatMax     ?? process.env.FLOAT_MAX      ?? '50000000'),
-      rvolMin:      parseFloat(filters.rvolMin      ?? process.env.RVOL_MIN       ?? '0'),
+      priceMin:     parseFloat(filters.priceMin     ?? process.env.PRICE_MIN      ?? POOL_FILTERS.priceMin),
+      priceMax:     parseFloat(filters.priceMax     ?? process.env.PRICE_MAX      ?? POOL_FILTERS.priceMax),
+      dollarVolMin: parseFloat(filters.dollarVolMin ?? process.env.DOLLAR_VOL_MIN ?? POOL_FILTERS.dollarVolMin),
+      floatRotMin:  parseFloat(filters.floatRotMin  ?? process.env.FLOAT_ROT_MIN  ?? POOL_FILTERS.floatRotMin),
+      gapMin:       parseFloat(filters.gapMin       ?? process.env.GAP_MIN        ?? POOL_FILTERS.gapMin),
+      floatMax:     parseInt(  filters.floatMax     ?? process.env.FLOAT_MAX      ?? POOL_FILTERS.floatMax),
+      rvolMin:      parseFloat(filters.rvolMin      ?? process.env.RVOL_MIN       ?? POOL_FILTERS.rvolMin),
       excludeEtf:   filters.excludeEtf !== false && filters.excludeEtf !== 'false',
     };
-    // Removed: volMin (share count) — dollarVolMin is the enforced floor.
-    // Removed: catalyst filter — catalyst is assigned during background
-    //   enrichment and is unknowable at parse time.
 
     const session = this.getMarketSession();
     console.log('[Scanner] Session:', session, '| Source:', this.source, '| Key:', !!this.apiKey);
@@ -287,7 +400,8 @@ class ScannerService {
 
   // -------------------------------------------------------------------------
   // Background enrichment — news
-  // Batch size 5: conservative for Finnhub/AlphaVantage rate limits
+  // Batch size 5: conservative for Finnhub/AlphaVantage rate limits.
+  // Re-scores A-setup after news enrichment since catalyst is now known.
   // -------------------------------------------------------------------------
   async enrichNewsBackground(stocks) {
     const toEnrich = stocks.slice(0, 20);
@@ -301,6 +415,8 @@ class ScannerService {
         stock.news     = [];
         stock.catalyst = null;
       }
+      // Re-score A-setup now that catalyst is known
+      stock.aSetup = scoreASetup(stock);
     });
 
     await this._writeScanCache((cached) => {
@@ -309,6 +425,7 @@ class ScannerService {
         if (idx !== -1) {
           cached[idx].news     = stock.news;
           cached[idx].catalyst = stock.catalyst;
+          cached[idx].aSetup   = stock.aSetup;
         }
       }
     });
@@ -318,7 +435,10 @@ class ScannerService {
 
   // -------------------------------------------------------------------------
   // Background enrichment — floats
-  // Batch size 20: Polygon Starter tolerates higher concurrency
+  // Batch size 20: Polygon Starter tolerates higher concurrency.
+  // Float always comes from reference endpoint — parseTicker no longer
+  // attempts snapshot fields so enrichment is the single source of truth.
+  // Re-scores A-setup after float is populated.
   // -------------------------------------------------------------------------
   async enrichFloatsBackground(stocks) {
     const needFloat = stocks.filter(s => !s.float);
@@ -348,6 +468,9 @@ class ScannerService {
           stock.floatRotation = parseFloat(((stock.volume / stock.float) * 100).toFixed(2));
         }
       } catch (e) { /* leave null — don't drop the ticker */ }
+
+      // Re-score A-setup now that float is known
+      stock.aSetup = scoreASetup(stock);
     });
 
     await this._writeScanCache((cached) => {
@@ -356,6 +479,7 @@ class ScannerService {
         if (idx !== -1) {
           cached[idx].float         = stock.float;
           cached[idx].floatRotation = stock.floatRotation;
+          cached[idx].aSetup        = stock.aSetup;
         }
       }
     });
@@ -452,6 +576,13 @@ class ScannerService {
 
   // -------------------------------------------------------------------------
   // Core ticker parser
+  //
+  // Phase 1 change: float fields removed from here entirely.
+  // parseTicker no longer attempts t.shareClassSharesOutstanding or
+  // t.weightedSharesOutstanding from the snapshot payload. Those fields are
+  // unreliable on snapshot responses and were causing inconsistency between
+  // tickers that happened to have them vs those that didn't.
+  // enrichFloatsBackground is now the single source of truth for all floats.
   // -------------------------------------------------------------------------
   parseTicker(t, session, f) {
     if (!t.ticker) return null;
@@ -460,10 +591,6 @@ class ScannerService {
     const prev = t.prevDay || {};
 
     // --- Price with staleness gate ---------------------------------------
-    // Polygon lastTrade.t is nanoseconds — divide by 1e6 to get ms.
-    // If the last trade is older than STALE_TRADE_MS, zero it out and let
-    // the fallback chain reach bid/ask mid. Prevents stale prints from
-    // driving incorrect gap calculations during slow pre-market periods.
     const now          = Date.now();
     const lastTradeTs  = t.lastTrade?.t ? Math.floor(t.lastTrade.t / 1e6) : 0;
     const tradeIsStale = lastTradeTs ? (now - lastTradeTs) > STALE_TRADE_MS : true;
@@ -512,54 +639,53 @@ class ScannerService {
     }
 
     // Gap filter — only enforced when prevClose is known.
-    // When prevClose = 0 we have no baseline so we leave the ticker in the
-    // pool rather than silently dropping it.
     if (prevClose > 0 && f.gapMin > 0 && gapPct < f.gapMin) return null;
     if (gapPct > GAP_CAP_PCT)   return null;
     if (gapPct < GAP_FLOOR_PCT) return null;
 
     // --- Float & float rotation -----------------------------------------
-    // See FLOAT DATA NOTE at top of file.
-    const float = t.shareClassSharesOutstanding
-               || t.weightedSharesOutstanding
-               || null;
+    // Phase 1: float always null here — enrichFloatsBackground is sole owner.
+    // Removed snapshot field attempt (t.shareClassSharesOutstanding etc.)
+    // for consistency. All tickers start with float=null and get enriched
+    // in the background pass.
+    const float         = null;
+    const floatRotation = null;
 
-    const floatRotation = (float && float > 0 && volume > 0)
-      ? parseFloat(((volume / float) * 100).toFixed(2))
-      : null;
-
-    if (f.floatMax > 0      && float          && float          > f.floatMax)     return null;
-    if (f.floatRotMin > 0   && floatRotation  !== null && floatRotation < f.floatRotMin) return null;
+    if (f.floatMax > 0      && float          && float          > f.floatMax)              return null;
+    if (f.floatRotMin > 0   && floatRotation  !== null && floatRotation < f.floatRotMin)   return null;
 
     // --- RVOL ------------------------------------------------------------
-    // null = unknown (prevVol unavailable). Filter skips unknown values
-    // rather than dropping the ticker.
     let rvol = null;
     if (prevVol > 0 && volume > 0) rvol = parseFloat((volume / prevVol).toFixed(2));
     if (f.rvolMin > 0 && rvol !== null && rvol < f.rvolMin) return null;
 
-    return {
+    const stock = {
       ticker:        t.ticker,
       price:         parseFloat(price.toFixed(2)),
       prevClose:     parseFloat(prevClose.toFixed(2)),
       gapPct:        parseFloat(gapPct.toFixed(2)),
-      gapTier:       this.getGapTier(gapPct),  // display label only
+      gapTier:       this.getGapTier(gapPct),
       change:        prevClose > 0
                        ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(2))
                        : 0,
       volume:        Math.floor(volume),
       dollarVolume:  Math.floor(dollarVolume),
-      rvol,                    // null = unknown
-      floatRotation,           // null = unknown
+      rvol,
+      floatRotation,
       pmHigh:        parseFloat((day.h  > 0 ? day.h  : price).toFixed(2)),
       pmLow:         parseFloat((day.l  > 0 ? day.l  : price).toFixed(2)),
-      float,                   // shares outstanding proxy — see file-level note
+      float,                   // always null at parse time — enriched later
       session,
       news:          [],
-      catalyst:      null,     // populated by enrichNewsBackground
-      lastTradeTime: lastTradeTs || null,  // ms epoch — read by staleness indicator
-      priceStale:    tradeIsStale,         // true if lastTrade > 15 min old
+      catalyst:      null,
+      lastTradeTime: lastTradeTs || null,
+      priceStale:    tradeIsStale,
     };
+
+    // Initial A-setup score with available data (float/catalyst null at this point)
+    stock.aSetup = scoreASetup(stock);
+
+    return stock;
   }
 
   // -------------------------------------------------------------------------
@@ -576,8 +702,6 @@ class ScannerService {
 
   // -------------------------------------------------------------------------
   // Alert detection
-  // PMH tracking is single-scan only here. Cross-scan cooldown is handled
-  // by pmHighBreaks map in store.js (Phase 4).
   // -------------------------------------------------------------------------
   detectAlerts(stocks) {
     return stocks.map(s => {
@@ -639,7 +763,7 @@ class ScannerService {
       const price  = prev * (1 + gap / 100);
       const volume = Math.floor(s.float * (s.floatRotPct / 100));
       const gapPct = parseFloat(gap.toFixed(2));
-      return {
+      const stock = {
         ticker:        s.ticker,
         price:         parseFloat(price.toFixed(2)),
         prevClose:     parseFloat(prev.toFixed(2)),
@@ -659,8 +783,10 @@ class ScannerService {
         lastTradeTime: null,
         priceStale:    false,
       };
+      stock.aSetup = scoreASetup(stock);
+      return stock;
     });
   }
 }
 
-module.exports = { ScannerService };
+module.exports = { ScannerService, POOL_FILTERS, DISPLAY_FILTERS, ASETUP_THRESHOLDS, scoreASetup };
