@@ -137,6 +137,7 @@ app.use('/api/news',    newsRoutes);
 app.use('/api/alerts',  alertRoutes);
 app.use('/api/pulse',   require('./routes/pulse'));
 app.use('/api/journal', require('./routes/journal'));
+app.use('/api/chart',   require('./routes/chart'));
 
 // Pulse snapshot
 app.get('/api/pulse/all', (req, res) => res.json(pulseStore));
