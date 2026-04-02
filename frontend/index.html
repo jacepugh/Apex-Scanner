@@ -80,22 +80,34 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .skel-line.w60{width:60%}.skel-line.w40{width:40%}.skel-line.w75{width:75%}
 .skel-right{width:36px;height:22px;background:var(--bg3);border-radius:4px;flex-shrink:0}
 
-/* ── PIN PAD ── */
-#pin-screen{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;}
-#pin-screen.hidden{display:none}
-.pin-logo{font-family:var(--head);font-size:28px;font-weight:700;color:var(--text);letter-spacing:0.05em}
-.pin-logo span{color:var(--accent)}
-.pin-subtitle{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:0.12em;text-transform:uppercase}
-.pin-dots{display:flex;gap:12px;margin:8px 0}
-.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border2);background:transparent;transition:all 0.15s}
-.pin-dot.filled{background:var(--accent);border-color:var(--accent);box-shadow:0 0 8px var(--accent)}
-.pin-dot.error{background:var(--red);border-color:var(--red)}
-.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:240px}
-.pin-btn{height:64px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;font-family:var(--head);font-size:24px;font-weight:600;color:var(--text);cursor:pointer;transition:all 0.1s;display:flex;align-items:center;justify-content:center;}
-.pin-btn:active{transform:scale(0.92);background:var(--bg3);border-color:var(--accent)}
-.pin-btn.del{font-size:18px;color:var(--dim)}
-.pin-btn.empty{background:transparent;border:none;pointer-events:none}
-.pin-error{font-family:var(--mono);font-size:11px;color:var(--red);letter-spacing:0.08em;min-height:16px}
+/* ── LOGIN SCREEN ── */
+#login-screen{
+  position:fixed;inset:0;z-index:9999;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+}
+#login-screen.hidden{display:none}
+.login-logo{font-family:var(--head);font-size:28px;font-weight:700;color:var(--text);letter-spacing:0.05em}
+.login-logo span{color:var(--accent)}
+.login-subtitle{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:0.12em;text-transform:uppercase}
+.login-form{display:flex;flex-direction:column;align-items:center;gap:12px;width:280px}
+.login-input{
+  width:100%;background:var(--bg2);border:1px solid var(--border2);
+  border-radius:10px;padding:14px 16px;
+  font-family:var(--mono);font-size:16px;color:var(--text);
+  text-align:center;letter-spacing:0.1em;outline:none;
+  -webkit-appearance:none;
+}
+.login-input:focus{border-color:var(--accent)}
+.login-input.error{border-color:var(--red)}
+.login-btn{
+  width:100%;padding:14px;background:var(--accent);border:none;border-radius:10px;
+  font-family:var(--head);font-size:16px;font-weight:700;color:var(--bg);
+  cursor:pointer;letter-spacing:0.08em;text-transform:uppercase;transition:opacity 0.15s;
+}
+.login-btn:active{opacity:0.8}
+.login-btn:disabled{opacity:0.4;cursor:not-allowed}
+.login-error{font-family:var(--mono);font-size:11px;color:var(--red);letter-spacing:0.08em;min-height:16px;text-align:center}
+.login-spinner{display:none;font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:0.08em}
 
 /* ── JOURNAL ── */
 #page-journal{position:fixed;top:calc(var(--safe-top) + 56px);bottom:calc(var(--safe-bot) + 60px);left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none;padding:12px;}
@@ -162,7 +174,6 @@ body.pulse-active #page-sizer{display:none}
 body.pulse-active #page-pulse{display:block}
 
 /* ── A-SETUP BADGE ── */
-/* Unmistakable on mobile — full-width banner at top of card, not a chip */
 .asetup-banner{
   display:flex;align-items:center;gap:8px;
   padding:7px 14px;
@@ -171,24 +182,11 @@ body.pulse-active #page-pulse{display:block}
   font-family:var(--mono);font-size:10px;font-weight:500;
   letter-spacing:0.1em;text-transform:uppercase;color:var(--asetup);
 }
-.asetup-banner .as-star{
-  font-size:14px;
-  animation:asPulse 2s ease-in-out infinite;
-}
-@keyframes asPulse{
-  0%,100%{opacity:1;transform:scale(1)}
-  50%{opacity:0.6;transform:scale(0.85)}
-}
+.asetup-banner .as-star{font-size:14px;animation:asPulse 2s ease-in-out infinite;}
+@keyframes asPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.6;transform:scale(0.85)}}
 .asetup-banner .as-label{letter-spacing:0.14em}
-.asetup-banner .as-score{
-  margin-left:auto;
-  font-size:9px;color:rgba(255,149,0,0.5);letter-spacing:0.06em;
-}
-/* Card border highlight when A-setup */
-.stock-card.asetup-active{
-  border-color:rgba(255,149,0,0.5);
-  box-shadow:0 0 0 1px rgba(255,149,0,0.15);
-}
+.asetup-banner .as-score{margin-left:auto;font-size:9px;color:rgba(255,149,0,0.5);letter-spacing:0.06em;}
+.stock-card.asetup-active{border-color:rgba(255,149,0,0.5);box-shadow:0 0 0 1px rgba(255,149,0,0.15);}
 
 /* ── STOCK CARDS ── */
 .stock-card{margin:8px 12px;background:var(--bg1);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:border-color 0.15s;}
@@ -433,28 +431,25 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 </head>
 <body>
 
-<!-- PIN SCREEN -->
-<div id="pin-screen">
-  <div class="pin-logo">SCANNY <span>BOI</span></div>
-  <div class="pin-subtitle">Enter PIN to access</div>
-  <div class="pin-dots">
-    <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
-    <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
-  </div>
-  <div class="pin-error" id="pin-error"></div>
-  <div class="pin-pad">
-    <button class="pin-btn" onclick="pinKey('1')">1</button>
-    <button class="pin-btn" onclick="pinKey('2')">2</button>
-    <button class="pin-btn" onclick="pinKey('3')">3</button>
-    <button class="pin-btn" onclick="pinKey('4')">4</button>
-    <button class="pin-btn" onclick="pinKey('5')">5</button>
-    <button class="pin-btn" onclick="pinKey('6')">6</button>
-    <button class="pin-btn" onclick="pinKey('7')">7</button>
-    <button class="pin-btn" onclick="pinKey('8')">8</button>
-    <button class="pin-btn" onclick="pinKey('9')">9</button>
-    <button class="pin-btn empty"></button>
-    <button class="pin-btn" onclick="pinKey('0')">0</button>
-    <button class="pin-btn del" onclick="pinDel()">⌫</button>
+<!-- LOGIN SCREEN — replaces client-side PIN pad -->
+<div id="login-screen">
+  <div class="login-logo">SCANNY <span>BOI</span></div>
+  <div class="login-subtitle">Enter passphrase to access</div>
+  <div class="login-form">
+    <input
+      class="login-input"
+      id="login-passphrase"
+      type="password"
+      placeholder="••••••••"
+      autocomplete="current-password"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false"
+      onkeydown="if(event.key==='Enter')submitLogin()"
+    />
+    <div class="login-error" id="login-error"></div>
+    <button class="login-btn" id="login-btn" onclick="submitLogin()">UNLOCK</button>
+    <div class="login-spinner" id="login-spinner">Verifying...</div>
   </div>
 </div>
 
@@ -626,7 +621,6 @@ window.addEventListener('unhandledrejection', function(e) {
     <div class="dual-inputs">
       <input type="number" class="mini-input" id="f-price-min" value="0.50" placeholder="Min $" step="0.5"/>
       <span>—</span>
-      <!-- Phase 1: priceMax default lowered to $5 -->
       <input type="number" class="mini-input" id="f-price-max" value="5" placeholder="Max $" step="1"/>
     </div>
   </div>
@@ -711,6 +705,13 @@ window.addEventListener('unhandledrejection', function(e) {
         <a href="https://polygon.io/dashboard" target="_blank" class="act-btn">🔑 Polygon Dashboard</a>
       </div>
     </div>
+    <div class="settings-section">
+      <div class="ds-label">Session</div>
+      <div class="settings-row">
+        <div class="settings-label">Sign Out</div>
+        <button class="act-btn" style="flex:none;padding:8px 16px" onclick="logout()">🔒 Logout</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -731,6 +732,110 @@ const CAT_COLORS = {
   sec:      '#ffcc00',
 };
 
+// ─── AUTH STATE ──────────────────────────────────────────────────────────────
+// csrfToken and wsToken live only in module scope — never localStorage.
+// Session validity is determined by the httpOnly sb_session cookie on the server.
+
+let _csrfToken = null;
+let _wsToken   = null;
+
+function getCsrfToken()  { return _csrfToken; }
+function getWsToken()    { return _wsToken;   }
+function clearAuthState() { _csrfToken = null; _wsToken = null; }
+
+// ─── LOGIN ───────────────────────────────────────────────────────────────────
+
+async function submitLogin() {
+  const input   = document.getElementById('login-passphrase');
+  const btn     = document.getElementById('login-btn');
+  const errEl   = document.getElementById('login-error');
+  const spinner = document.getElementById('login-spinner');
+  const passphrase = input.value.trim();
+
+  if (!passphrase) return;
+
+  errEl.textContent = '';
+  input.classList.remove('error');
+  btn.disabled      = true;
+  spinner.style.display = 'block';
+
+  try {
+    const res  = await fetch('/api/auth/login', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ passphrase }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      input.classList.add('error');
+      errEl.textContent = data.error || 'Login failed';
+      input.value = '';
+      input.focus();
+      return;
+    }
+
+    // Store tokens in memory only
+    _csrfToken = data.csrfToken;
+    _wsToken   = data.wsToken;
+
+    // Hide login screen and boot the app
+    document.getElementById('login-screen').classList.add('hidden');
+    input.value = '';
+    bootApp();
+
+  } catch (e) {
+    errEl.textContent = 'Network error — try again';
+  } finally {
+    btn.disabled          = false;
+    spinner.style.display = 'none';
+  }
+}
+
+// Called on any 401 response from a protected endpoint
+function handleUnauth() {
+  clearAuthState();
+  // Stop any ongoing WS / polling
+  if (STATE.refreshTimer) clearInterval(STATE.refreshTimer);
+  // Show login screen
+  const screen = document.getElementById('login-screen');
+  screen.classList.remove('hidden');
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = 'Session expired — please log in again';
+  document.getElementById('login-passphrase').focus();
+}
+
+async function logout() {
+  try {
+    await fetch('/api/auth/logout', { method: 'POST' });
+  } catch (e) { /* ignore */ }
+  closeSettings();
+  handleUnauth();
+}
+
+// ─── AUTHENTICATED FETCH WRAPPER ─────────────────────────────────────────────
+// Adds X-CSRF-Token header to mutating requests.
+// Intercepts 401 responses and redirects to login.
+
+async function apiFetch(url, options = {}) {
+  const method = (options.method || 'GET').toUpperCase();
+  const headers = { ...(options.headers || {}) };
+
+  // Attach CSRF token on mutating requests
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) && _csrfToken) {
+    headers['X-CSRF-Token'] = _csrfToken;
+  }
+
+  const res = await fetch(url, { ...options, headers });
+
+  if (res.status === 401) {
+    handleUnauth();
+    throw new Error('Unauthenticated');
+  }
+
+  return res;
+}
+
 // ─── STATE ───────────────────────────────────────────────────────────────────
 
 const STATE = {
@@ -745,10 +850,10 @@ const STATE = {
   newsWindowHours: 24,
   filters: {
     priceMin:     0.5,
-    priceMax:     5,        // Phase 1: lowered from 25 to 5
-    dollarVolMin: 100_000,  // Phase 1: display default $100K
+    priceMax:     5,
+    dollarVolMin: 100_000,
     floatRotMin:  0,
-    gapMin:       7,        // Phase 1: display default 7%
+    gapMin:       7,
     floatMax:     50_000_000,
     catalyst:     false,
     excludeEtf:   true,
@@ -761,9 +866,6 @@ const STATE = {
 };
 
 // ─── A-SETUP SCORING (client mirror) ─────────────────────────────────────────
-// Mirrors scanner.js scoreASetup so patchCardData can re-evaluate on
-// price_update without waiting for the next full scan_results broadcast.
-// Thresholds must stay in sync with ASETUP_THRESHOLDS in scanner.js.
 
 const ASETUP_THRESHOLDS = {
   gapMin:          10,
@@ -784,13 +886,11 @@ function scoreASetup(s) {
     if (s.float <= ASETUP_THRESHOLDS.floatMax) score++;
     else isASetup = false;
   }
-  // float null → soft pass
 
   if (s.rvol !== null) {
     if (s.rvol >= ASETUP_THRESHOLDS.rvolMin) score++;
     else isASetup = false;
   }
-  // rvol null → soft pass
 
   if (s.dollarVolume >= ASETUP_THRESHOLDS.dollarVolMin) score++;
   else isASetup = false;
@@ -870,7 +970,7 @@ async function fetchPulse() {
   const updEl = document.getElementById('pulse-updated');
   if (updEl) updEl.textContent = 'Updating...';
   try {
-    const res = await fetch('/api/pulse/all');
+    const res = await apiFetch('/api/pulse/all');
     const all = await res.json();
     Object.keys(all).forEach(sym => {
       try { const d = all[sym]; if (d?.price > 0) renderPulseTile(sym, d); } catch(e) {}
@@ -880,7 +980,7 @@ async function fetchPulse() {
     });
     if (updEl) updEl.textContent = 'Updated ' + ts + ' ET — tap to refresh';
   } catch(e) {
-    if (updEl) updEl.textContent = 'Error: ' + e.message + ' — tap to retry';
+    if (e.message !== 'Unauthenticated' && updEl) updEl.textContent = 'Error: ' + e.message + ' — tap to retry';
   }
   if (updEl) updEl.onclick = fetchPulse;
 }
@@ -970,8 +1070,6 @@ function getCardMeta(s) {
   const isLow    = floatM && floatM < 20;
   const gapTier  = s.gapTier || 0;
 
-  // Phase 1: float disclaimer — (est.) label on all float tags
-  // shares outstanding is not true float (see scanner.js FLOAT DATA NOTE)
   let floatTag = '';
   if (isUltra) {
     floatTag = '<div class="card-float-tag uf">★ ULTRA <span class="float-est">(est.)</span></div>';
@@ -981,24 +1079,16 @@ function getCardMeta(s) {
     floatTag = `<div class="card-float-tag">${floatM.toFixed(1)}M <span class="float-est">(est.)</span></div>`;
   }
 
-  // Phase 1: A-setup — read from s.aSetup (set by scoreASetup on backend)
-  // or re-score client-side if missing (e.g. older cached data)
   const aSetup = s.aSetup || scoreASetup(s);
 
   return {
-    floatM,
-    isUltra,
-    isLow,
-    gapTier,
-    aSetup,
+    floatM, isUltra, isLow, gapTier, aSetup,
     tickCls:    isUltra ? 'ultra-float' : isLow ? 'low-float' : '',
     gapTierCls: gapTier >= 3 ? 'tier3' : gapTier >= 2 ? 'tier2' : '',
     frotCls:    s.floatRotation >= 25 ? 'hig' : s.floatRotation >= 10 ? 'hi' : '',
     floatTag,
   };
 }
-
-// ─── A-SETUP BANNER HTML ─────────────────────────────────────────────────────
 
 function buildASetupBannerHtml(aSetup) {
   if (!aSetup?.isASetup) return '';
@@ -1062,7 +1152,6 @@ function updateTimestamp() {
 function patchCardData(cardEl, s) {
   const { gapTier, gapTierCls, frotCls, aSetup } = getCardMeta(s);
 
-  // Phase 0: staleness
   cardEl.classList.toggle('price-stale', !!s.priceStale);
 
   const priceEl = cardEl.querySelector('.card-price');
@@ -1099,19 +1188,15 @@ function patchCardData(cardEl, s) {
   const catRow = cardEl.querySelector('.card-cat-row');
   if (catRow) catRow.innerHTML = buildCatChipHtml(s);
 
-  // Phase 1: A-setup badge — patch on every price_update so badge reflects
-  // reality as soon as enrichment completes, not just on full card rebuilds.
   const existingBanner = cardEl.querySelector('.asetup-banner');
   const cardMain       = cardEl.querySelector('.card-main');
   if (aSetup.isASetup) {
     cardEl.classList.add('asetup-active');
     if (!existingBanner && cardMain) {
-      // Insert banner before card-main (top of card, above price row)
       const banner = document.createElement('div');
       banner.innerHTML = buildASetupBannerHtml(aSetup);
       cardEl.insertBefore(banner.firstChild, cardMain);
     } else if (existingBanner) {
-      // Update score in case it changed after further enrichment
       const scoreEl = existingBanner.querySelector('.as-score');
       if (scoreEl) scoreEl.textContent = aSetup.score + '/5';
     }
@@ -1149,8 +1234,6 @@ function buildCardHtml(s, i, isNew = false) {
   const isOpen  = STATE.expanded.has(s.ticker);
   const catChip = buildCatChipHtml(s);
   const ez      = calcEntryZone(s);
-
-  // Phase 1: A-setup banner at top of card — only when criteria met
   const aSetupBanner = buildASetupBannerHtml(aSetup);
 
   const entryZoneHtml = ez ? `
@@ -1315,7 +1398,7 @@ async function fetchLiveData() {
       gapMin:       STATE.filters.gapMin,
       floatMax:     STATE.filters.floatMax,
     });
-    const res = await fetch(BACKEND + '/api/scanner?' + params);
+    const res = await apiFetch(BACKEND + '/api/scanner?' + params);
     if (!res.ok) return;
     const data = await res.json();
     if (!Array.isArray(data) || !data.length) {
@@ -1330,7 +1413,7 @@ async function fetchLiveData() {
     applyFilters();
     setScanningState('done');
   } catch(e) {
-    console.warn('[Fetch] Failed:', e.message);
+    if (e.message !== 'Unauthenticated') console.warn('[Fetch] Failed:', e.message);
   }
 }
 
@@ -1345,8 +1428,11 @@ function updateConnStatus(live) {
 // ─── WEBSOCKET ───────────────────────────────────────────────────────────────
 
 function connectWS() {
+  const token = getWsToken();
+  if (!token) return; // No token yet — bootApp() will call connectWS after login
+
   try {
-    const ws = new WebSocket(WS_BACKEND);
+    const ws = new WebSocket(WS_BACKEND + '?token=' + encodeURIComponent(token));
 
     ws.onopen = () => { updateConnStatus(true); updateClock(); };
 
@@ -1363,7 +1449,6 @@ function connectWS() {
           setScanningState('done');
         }
 
-        // Phase 0+1: fast price refresh — patches card prices and A-setup badge in-place.
         if (msg.type === 'price_update' && msg.data) {
           let anyUpdated = false;
           for (const stock of STATE.stocks) {
@@ -1374,7 +1459,6 @@ function connectWS() {
             if (stock.prevClose > 0) {
               stock.change = parseFloat(((u.price - stock.prevClose) / stock.prevClose * 100).toFixed(2));
             }
-            // Re-score A-setup with updated price (gap may have changed)
             stock.aSetup = scoreASetup(stock);
             anyUpdated = true;
             const cardEl = document.getElementById('card-' + stock.ticker);
@@ -1386,7 +1470,16 @@ function connectWS() {
       } catch(err) {}
     };
 
-    ws.onclose = () => { updateConnStatus(false); setTimeout(connectWS, 5000); };
+    // 4401 = our custom auth rejection code — don't reconnect
+    ws.onclose = (e) => {
+      if (e.code === 4401) {
+        console.warn('[WS] Auth rejected — redirecting to login');
+        handleUnauth();
+        return;
+      }
+      updateConnStatus(false);
+      setTimeout(connectWS, 5000);
+    };
     ws.onerror = () => {};
   } catch(e) {}
 }
@@ -1561,32 +1654,33 @@ function sizerCalc() {
 // JOURNAL
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const JOURNAL_KEY = 'sb_journal_trades';
 let journalTrades = [];
 
 async function journalLoad() {
   try {
-    const res = await fetch('/api/journal');
+    const res = await apiFetch('/api/journal');
     if (res.ok) {
       journalTrades = await res.json();
-      localStorage.setItem(JOURNAL_KEY, JSON.stringify(journalTrades));
-    } else throw new Error('unavailable');
+    }
   } catch(e) {
-    try { journalTrades = JSON.parse(localStorage.getItem(JOURNAL_KEY) || '[]'); }
-    catch(e2) { journalTrades = []; }
+    if (e.message !== 'Unauthenticated') {
+      console.warn('[Journal] Load failed:', e.message);
+    }
+    journalTrades = [];
   }
   renderJournal();
 }
 
 async function journalSave() {
-  localStorage.setItem(JOURNAL_KEY, JSON.stringify(journalTrades));
   try {
-    await fetch('/api/journal', {
-      method: 'POST',
+    await apiFetch('/api/journal', {
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(journalTrades),
+      body:    JSON.stringify(journalTrades),
     });
-  } catch(e) { console.log('[Journal] Backend sync failed'); }
+  } catch(e) {
+    if (e.message !== 'Unauthenticated') console.warn('[Journal] Save failed:', e.message);
+  }
 }
 
 function importCSV(event) {
@@ -1746,54 +1840,11 @@ function submitAddTrade() {
   journalSave(); renderJournal(); closeAddTradeModal();
 }
 
-// ─── PIN ─────────────────────────────────────────────────────────────────────
+// ─── APP BOOT ─────────────────────────────────────────────────────────────────
+// Called after successful login. Separated from init() so the app only
+// starts fetching data once we have valid auth tokens.
 
-const PIN_KEY  = 'sb_auth';
-const PIN_CODE = '1337';
-let pinEntry   = '';
-
-function pinKey(d) {
-  if (pinEntry.length >= 4) return;
-  pinEntry += d;
-  updatePinDots();
-  if (pinEntry.length === 4) setTimeout(checkPin, 120);
-}
-
-function pinDel() {
-  pinEntry = pinEntry.slice(0, -1);
-  updatePinDots();
-  document.getElementById('pin-error').textContent = '';
-  document.querySelectorAll('.pin-dot').forEach(d => d.classList.remove('error'));
-}
-
-function updatePinDots() {
-  for (let i = 0; i < 4; i++) {
-    const dot = document.getElementById('pd' + i);
-    dot.classList.toggle('filled', i < pinEntry.length);
-    dot.classList.remove('error');
-  }
-}
-
-function checkPin() {
-  if (pinEntry === PIN_CODE) {
-    localStorage.setItem(PIN_KEY, '1');
-    document.getElementById('pin-screen').classList.add('hidden');
-  } else {
-    document.querySelectorAll('.pin-dot').forEach(d => d.classList.add('error'));
-    document.getElementById('pin-error').textContent = 'Incorrect PIN';
-    setTimeout(() => { pinEntry = ''; updatePinDots(); document.getElementById('pin-error').textContent = ''; }, 800);
-  }
-}
-
-function checkAuth() {
-  if (localStorage.getItem(PIN_KEY) === '1') document.getElementById('pin-screen').classList.add('hidden');
-}
-
-// ─── INIT ─────────────────────────────────────────────────────────────────────
-
-function init() {
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
-  checkAuth();
+function bootApp() {
   journalLoad();
   updateClock();
   setInterval(updateClock, 1000);
@@ -1808,6 +1859,22 @@ function init() {
   fetchLiveData();
   connectWS();
   STATE.refreshTimer = setInterval(fetchLiveData, STATE.refreshRate);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+
+function init() {
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+
+  // Start the clock immediately so the header isn't empty
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // Initialise slider display labels
+  ['dvol','frot','gap','float'].forEach(updateSliderDisplay);
+
+  // Focus the passphrase input
+  setTimeout(() => document.getElementById('login-passphrase')?.focus(), 100);
 }
 
 init();
