@@ -58,6 +58,7 @@ const { CacheService }                 = require('./services/cache');
 const store                            = require('./services/store');
 
 const app    = express();
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 const wss    = new WebSocket.Server({ server, clientTracking: false });
 
