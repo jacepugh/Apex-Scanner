@@ -46,6 +46,30 @@
  *   ASETUP_THRESHOLDS — criteria for the A-setup badge. Scored per-ticker
  *                       after enrichment. Null RVOL does NOT disqualify —
  *                       missing prevVol is common on the best pre-mkt plays.
+ *
+ * NEWS CATALYST QUALITY (Phase 2)
+ * --------------------------------
+ * Three gating layers applied in classifyCatalyst() before keyword matching:
+ *
+ *   1. Ticker relevance filter — article must mention the ticker symbol in
+ *      the headline or first 300 chars of summary. Eliminates roundup articles
+ *      (e.g. Benzinga "Top 20 Movers") that mention 20-30 tickers and were
+ *      previously attributed as catalysts to whichever ticker was being enriched.
+ *
+ *   2. Recency gate — if the freshest relevant article is older than 48 hours,
+ *      catalyst returns null. Prevents 700+ day old news from triggering A-setup
+ *      qualification. Frontend news window display is unchanged.
+ *
+ *   3. Polygon insights[] sentiment gate — Polygon's /v2/reference/news returns
+ *      an insights[] array per article. If an entry's sentiment field is non-null
+ *      (set by news.js fetchPolygonNews when insights[] contained this ticker),
+ *      the article is confirmed directly relevant — skip text relevance check.
+ *      If sentiment is null, fall through to text relevance filter (covers both
+ *      "ticker absent from insights[]" and Finnhub/AV fallback articles).
+ *
+ * classifyCatalyst() signature changed from (newsItems) to (newsItems, ticker)
+ * to support relevance filtering. enrichNewsBackground passes stock.ticker.
+ * aSetup re-score always runs AFTER catalyst is set.
  */
 
 'use strict';
@@ -94,11 +118,11 @@ const DISPLAY_FILTERS = {
  * RVOL null does NOT disqualify — see file-level note.
  */
 const ASETUP_THRESHOLDS = {
-  gapMin:       10,       // gap > 10%
-  floatMax:     20_000_000, // float < 20M shares outstanding
-  rvolMin:      5,         // RVOL > 5x (skipped when null)
-  dollarVolMin: 250_000,   // dollar volume > $250K
-  requireCatalyst: true,   // catalyst must be confirmed
+  gapMin:          10,          // gap > 10%
+  floatMax:        20_000_000,  // float < 20M shares outstanding
+  rvolMin:         5,           // RVOL > 5x (skipped when null)
+  dollarVolMin:    250_000,     // dollar volume > $250K
+  requireCatalyst: true,        // catalyst must be confirmed
 };
 
 // ---------------------------------------------------------------------------
@@ -117,6 +141,9 @@ const GAP_FLOOR_PCT = -80;
 
 /** Minimum dollar volume to bother parsing a ticker at all */
 const DOLLAR_VOL_FLOOR = 10_000;
+
+/** Phase 2: maximum article age for catalyst classification */
+const CATALYST_RECENCY_MS = 48 * 60 * 60 * 1000; // 48 hours
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -150,7 +177,7 @@ const SORT_FN = (a, b) => {
 };
 
 // ---------------------------------------------------------------------------
-// ETF / warrant blocklist — extracted to module scope to avoid
+// ETF / warrant / rights blocklist — extracted to module scope to avoid
 // re-instantiating on every parseTicker call
 // ---------------------------------------------------------------------------
 const ETF_SET = new Set([
@@ -402,6 +429,10 @@ class ScannerService {
   // Background enrichment — news
   // Batch size 5: conservative for Finnhub/AlphaVantage rate limits.
   // Re-scores A-setup after news enrichment since catalyst is now known.
+  //
+  // Phase 2: classifyCatalyst now receives stock.ticker so relevance
+  // filtering, recency gating, and insights[] gating can be applied.
+  // aSetup re-score MUST run after catalyst is set — ordering is intentional.
   // -------------------------------------------------------------------------
   async enrichNewsBackground(stocks) {
     const toEnrich = stocks.slice(0, 20);
@@ -410,12 +441,13 @@ class ScannerService {
       try {
         const newsItems = await this.news.getNewsForTicker(stock.ticker);
         stock.news     = newsItems;
-        stock.catalyst = this.classifyCatalyst(newsItems);
+        stock.catalyst = this.classifyCatalyst(newsItems, stock.ticker);
       } catch (e) {
         stock.news     = [];
         stock.catalyst = null;
       }
-      // Re-score A-setup now that catalyst is known
+      // Re-score A-setup now that catalyst is known.
+      // Must run AFTER catalyst assignment — Phase 2 requirement.
       stock.aSetup = scoreASetup(stock);
     });
 
@@ -689,13 +721,20 @@ class ScannerService {
   }
 
   // -------------------------------------------------------------------------
-  // ETF / warrant detection
+  // ETF / warrant / rights detection
+  //
+  // Phase 2 addition: lowercase 'r' suffix (length >= 4) catches rights
+  // offering instruments like MPTIr. Distinct from the existing uppercase 'R'
+  // check which targets a different instrument class (5-char tickers only).
+  // length >= 4 guard is belt-and-suspenders — no real common shares end in
+  // lowercase 'r' in US equity markets.
   // -------------------------------------------------------------------------
   isEtf(ticker) {
     if (!ticker)            return true;
     if (ticker.length > 5)  return true;
     if (/W[Ss]?$/.test(ticker))                    return true;
     if (/R$/.test(ticker) && ticker.length === 5)  return true;
+    if (/r$/.test(ticker) && ticker.length >= 4)   return true; // rights offerings e.g. MPTIr
     if (/U$/.test(ticker) && ticker.length === 5)  return true;
     return ETF_SET.has(ticker.toUpperCase());
   }
@@ -718,11 +757,75 @@ class ScannerService {
   }
 
   // -------------------------------------------------------------------------
-  // Catalyst classification
+  // Catalyst classification — Phase 2
+  //
+  // Signature change: now accepts (newsItems, ticker) instead of (newsItems)
+  // so relevance filtering can gate which articles reach keyword matching.
+  //
+  // Three gating layers (applied in order before regex runs):
+  //
+  //   Layer 1 — Polygon insights[] sentiment gate
+  //     news.js sets n.sentiment when insights[] contained an entry for this
+  //     ticker. Non-null sentiment = confirmed direct mention → pass through.
+  //     Null sentiment falls through to Layer 2 (covers Finnhub/AV articles
+  //     and Polygon articles where the ticker was absent from insights[]).
+  //
+  //   Layer 2 — Text relevance filter
+  //     Ticker symbol must appear in the headline or first 300 chars of
+  //     summary. Eliminates roundup articles that mention 20-30 tickers
+  //     without being specifically about any of them.
+  //
+  //   Layer 3 — Recency gate
+  //     After relevance filtering, check the freshest article's publishedAt.
+  //     If older than CATALYST_RECENCY_MS (48h), return null. Prevents stale
+  //     news from triggering catalyst badges and A-setup qualification.
+  //
+  // Keyword classification runs only on articles that pass all three layers.
   // -------------------------------------------------------------------------
-  classifyCatalyst(newsItems = []) {
+  classifyCatalyst(newsItems = [], ticker = '') {
     if (!newsItems?.length) return null;
-    const text = newsItems
+
+    const tkLower = ticker.toLowerCase();
+    const now     = Date.now();
+
+    // --- Layers 1 + 2: filter to articles confirmed relevant to this ticker ---
+    const relevant = newsItems.filter(n => {
+      // Layer 1: Polygon insights[] confirmation
+      // n.sentiment is non-null only when fetchPolygonNews found this ticker
+      // in the article's insights[] array. Trust it unconditionally.
+      if (n.sentiment !== null && n.sentiment !== undefined) {
+        return true;
+      }
+
+      // Layer 2: Text relevance fallback
+      // Used for: Finnhub/AV articles (no insights[]), and Polygon articles
+      // where insights[] was absent or didn't contain this ticker.
+      if (tkLower) {
+        const headline   = (n.headline || '').toLowerCase();
+        const summaryPfx = (n.summary  || '').slice(0, 300).toLowerCase();
+        return headline.includes(tkLower) || summaryPfx.includes(tkLower);
+      }
+
+      // No ticker provided (shouldn't happen in normal flow) — pass through
+      return true;
+    });
+
+    if (!relevant.length) return null;
+
+    // --- Layer 3: Recency gate ---
+    // Find the freshest publishedAt across all relevant articles.
+    // relevant[] is pre-sorted by score then date from news.js, but we want
+    // the absolute newest timestamp regardless of score order.
+    const freshestMs = Math.max(
+      ...relevant.map(n => new Date(n.publishedAt || 0).getTime())
+    );
+    if (now - freshestMs > CATALYST_RECENCY_MS) {
+      console.log(`[Scanner] Catalyst gated by recency for ${ticker} — freshest article ${Math.round((now - freshestMs) / 3600000)}h old`);
+      return null;
+    }
+
+    // --- Keyword classification on confirmed-relevant articles only ---
+    const text = relevant
       .map(n => ((n.headline || '') + ' ' + (n.summary || '')).toLowerCase())
       .join(' ');
 
@@ -738,6 +841,7 @@ class ScannerService {
       return { type: 'partner',  label: 'Partnership',   class: 'cat-partner',  score: 6 };
     if (/8-k|s-1|sec filing|offering|raise|uplist/.test(text))
       return { type: 'sec',      label: 'SEC Filing',    class: 'cat-sec',      score: 5 };
+
     return null;
   }
 
