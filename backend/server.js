@@ -1,5 +1,7 @@
 'use strict';
 
+require('dotenv').config(); // Must be first — loads env vars before any other module reads them
+
 /**
  * APEX SCANNER — Backend Server
  * Node.js + Express + WebSocket
@@ -54,8 +56,6 @@ const { ScannerService, POOL_FILTERS } = require('./services/scanner');
 const { NewsService }                  = require('./services/news');
 const { CacheService }                 = require('./services/cache');
 const store                            = require('./services/store');
-
-require('dotenv').config();
 
 const app    = express();
 const server = http.createServer(app);
