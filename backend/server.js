@@ -87,7 +87,7 @@ app.use('/api/', rateLimit({
 // Login endpoint — 5 attempts per 15 min, then 1 hour block
 const loginLimiter = rateLimit({
   windowMs:         15 * 60 * 1000,
-  max:              5,
+  max:              50,
   skipSuccessfulRequests: true,
   handler: (req, res) => {
     res.status(429).json({ error: 'Too many login attempts. Try again in 1 hour.' });
