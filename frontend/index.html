@@ -831,6 +831,7 @@ const STATE = {
 
 // Chart data cache — keyed by ticker, holds raw 1-min bars + overlays
 const CHART_CACHE = {};
+const STOCK_MAP   = {}; // ticker → stock object, used by news dropdown
 
 // ─── A-SETUP SCORING ──────────────────────────────────────────────────────────
 
@@ -1048,6 +1049,7 @@ function patchCards() {
     }
   });
   STATE.renderedTickers=newTickers;
+  STATE.filtered.forEach(s=>{ STOCK_MAP[s.ticker]=s; });
   updateTimestamp();
 }
 
@@ -1120,36 +1122,10 @@ function buildCardHtml(s, i, isNew=false) {
   const {tickCls,floatTag,frotCls,gapTierCls,floatM,aSetup}=getCardMeta(s);
   const isPmh=s.abovePmh||s.breakingPmh;
   const isOpen=STATE.expanded.has(s.ticker);
-  const ez=calcEntryZone(s);
 
-  const entryZoneHtml=ez?`
-    <div class="entry-zone">
-      <div class="ez-title">⚡ First Pullback Setup</div>
-      <div class="ez-grid">
-        <div class="ez-item"><div class="ez-label">Entry Zone</div><div class="ez-val entry">$${ez.entryLow}–$${ez.entryHigh}</div></div>
-        <div class="ez-item"><div class="ez-label">Stop</div><div class="ez-val stop">$${ez.stop}</div></div>
-        <div class="ez-item"><div class="ez-label">2R Target</div><div class="ez-val target">$${ez.target}</div></div>
-        <div class="ez-item"><div class="ez-label">R:R</div><div class="ez-val rr">${ez.rr}</div></div>
-      </div>
-      <div class="ez-note">Entry near PM High retest · Stop below PM Low · 2R target</div>
-    </div>`:
-
-  '';
-
+  // Trimmed detail grid — no dupes from card face, no shares vol
   const detail=`
     <div class="card-detail ${isOpen?'open':''}" id="detail-${s.ticker}">
-      <div class="detail-grid">
-        <div class="dg-item"><div class="dg-label">Prev Close</div><div class="dg-val">$${s.prevClose||'—'}</div></div>
-        <div class="dg-item"><div class="dg-label">Gap %</div><div class="dg-val ${gapTierCls||'green'}">+${s.gapPct}%</div></div>
-        <div class="dg-item"><div class="dg-label">$ Volume</div><div class="dg-val accent">${fmt(s.dollarVolume)}</div></div>
-        <div class="dg-item"><div class="dg-label">Float Rotation</div><div class="dg-val ${s.floatRotation>=25?'gold':s.floatRotation>=10?'green':''}">${s.floatRotation!=null?s.floatRotation.toFixed(1)+'%':'N/A'}</div></div>
-        <div class="dg-item"><div class="dg-label">Shares Vol</div><div class="dg-val">${fmt(s.volume)}</div></div>
-        <div class="dg-item"><div class="dg-label">RVOL</div><div class="dg-val">${s.rvol!=null?s.rvol+'×':'N/A'}</div></div>
-        <div class="dg-item"><div class="dg-label">PM High</div><div class="dg-val ${isPmh?'gold':''}">$${s.pmHigh||'—'}</div></div>
-        <div class="dg-item"><div class="dg-label">PM Low</div><div class="dg-val">$${s.pmLow||'—'}</div></div>
-        ${floatM?`<div class="dg-item"><div class="dg-label">Float <span style="font-size:8px;color:var(--dim)">(est.)</span></div><div class="dg-val">${floatM.toFixed(1)}M</div></div>`:''}
-      </div>
-      ${entryZoneHtml}
       <div class="chart-section" id="chart-section-${s.ticker}">
         <div class="chart-header">
           <div class="chart-header-left">
@@ -1173,8 +1149,15 @@ function buildCardHtml(s, i, isNew=false) {
         </div>
         <div class="chart-tags" id="chart-tags-${s.ticker}"></div>
       </div>
+      <div class="detail-grid">
+        <div class="dg-item"><div class="dg-label">Prev Close</div><div class="dg-val">$${s.prevClose||'—'}</div></div>
+        <div class="dg-item"><div class="dg-label">RVOL</div><div class="dg-val">${s.rvol!=null?s.rvol+'×':'N/A'}</div></div>
+        <div class="dg-item"><div class="dg-label">PM High</div><div class="dg-val ${isPmh?'gold':''}">$${s.pmHigh||'—'}</div></div>
+        <div class="dg-item"><div class="dg-label">PM Low</div><div class="dg-val">$${s.pmLow||'—'}</div></div>
+        ${floatM?`<div class="dg-item"><div class="dg-label">Float <span style="font-size:8px;color:var(--dim)">(est.)</span></div><div class="dg-val">${floatM.toFixed(1)}M</div></div>`:''}
+      </div>
       <div class="news-dropdown" id="news-dd-${s.ticker}">
-        <div class="news-dropdown-tab" onclick="event.stopPropagation();toggleNewsDropdown('${s.ticker}',${JSON.stringify(s).replace(/</g,'\\u003c')})">
+        <div class="news-dropdown-tab" onclick="event.stopPropagation();toggleNewsDropdown('${s.ticker}')">
           <span class="ndt-icon">📰</span>
           <span class="ndt-label">News &amp; Catalyst</span>
           <span class="ndt-chip-wrap">${catTabChipHtml(s)}</span>
@@ -1226,12 +1209,16 @@ function toggleCard(ticker) {
 
 // ─── NEWS DROPDOWN ────────────────────────────────────────────────────────────
 
-function toggleNewsDropdown(ticker, s) {
+function toggleNewsDropdown(ticker) {
   const dd=document.getElementById('news-dd-'+ticker); if(!dd) return;
   const isOpen=dd.classList.toggle('open');
   if (isOpen) {
     const body=document.getElementById('news-dd-body-'+ticker);
-    if (body&&!body.dataset.loaded) { body.innerHTML=buildNewsHtml(s); body.dataset.loaded='1'; }
+    if (body&&!body.dataset.loaded) {
+      const s=STOCK_MAP[ticker];
+      body.innerHTML=s?buildNewsHtml(s):'<div class="no-news">Data unavailable</div>';
+      body.dataset.loaded='1';
+    }
   }
 }
 
