@@ -69,7 +69,7 @@ class AlpacaService {
             timeframe:  tf,
             start:      this._todayPremarketStart(),
             limit:      FRAME_LIMITS[tf],
-            feed:       'iex',
+            feed:       'sip',
             adjustment: 'raw',
           },
           timeout: 10_000,
