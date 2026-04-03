@@ -1,37 +1,6 @@
 'use strict';
 
-require('dotenv').config(); // Must be first — loads env vars before any other module reads them
-
-/**
- * APEX SCANNER — Backend Server
- * Node.js + Express + WebSocket
- *
- * SCAN ARCHITECTURE (Phase 0)
- * ---------------------------
- * Two independent timers run during trading hours:
- *
- *   Discovery timer  — full scan + enrichment, updates store pool
- *     · 60s  pre-market  (4:00–9:29am ET)
- *     · 30s  market open (9:30–10:30am ET)
- *     · 120s after-hours
- *     · broadcasts: scan_results, alerts
- *
- *   Price refresh timer — lightweight price-only update for displayed tickers
- *     · 10s  pre-market
- *     · 5s   market open (9:30–10:30am ET)
- *     · paused after 10:30am and when market closed
- *     · broadcasts: price_update (small payload, no enrichment)
- *
- * Both timers pause when market is closed and resume at pre-market open.
- * Market session logic lives in scanner.getMarketSession() — single source
- * of truth, not duplicated here.
- *
- * SECURITY (Phase 3)
- * ------------------
- * All /api/ routes except /api/auth/login and /api/health require a valid
- * JWT in the sb_session httpOnly cookie.  WebSocket upgrades require a
- * signed wsToken passed as ?token=xxx on the connect URL.
- */
+require('dotenv').config();
 
 const express      = require('express');
 const axios        = require('axios');
@@ -78,14 +47,12 @@ app.use(express.static(path.join(__dirname, '../frontend'), {
 
 // ─── RATE LIMITS ─────────────────────────────────────────────────────────────
 
-// General API limit — tightened from 120/min to 30/min
 app.use('/api/', rateLimit({
   windowMs: 60 * 1000,
   max:      30,
   message:  { error: 'Too many requests, slow down.' },
 }));
 
-// Login endpoint — 5 attempts per 15 min, then 1 hour block
 const loginLimiter = rateLimit({
   windowMs:         15 * 60 * 1000,
   max:              50,
@@ -95,9 +62,8 @@ const loginLimiter = rateLimit({
   },
 });
 
-// ─── PUBLIC ROUTES (no auth) ─────────────────────────────────────────────────
+// ─── PUBLIC ROUTES ───────────────────────────────────────────────────────────
 
-// Health — Railway uptime checks hit this, must stay public
 app.get('/api/health', (req, res) => {
   const session = scanner.getMarketSession();
   res.json({
@@ -111,10 +77,9 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Auth routes — login is public (has its own rate limiter), logout requires cookie but is self-contained
 app.use('/api/auth', loginLimiter, authRouter);
 
-// ─── AUTH MIDDLEWARE — applied to all /api/ from here down ───────────────────
+// ─── AUTH MIDDLEWARE ──────────────────────────────────────────────────────────
 
 app.use('/api/', requireAuth);
 
@@ -132,14 +97,14 @@ app.locals.store     = store;
 
 // ─── PROTECTED ROUTES ────────────────────────────────────────────────────────
 
-app.use('/api/scanner', scannerRoutes);
-app.use('/api/news',    newsRoutes);
-app.use('/api/alerts',  alertRoutes);
-app.use('/api/pulse',   require('./routes/pulse'));
-app.use('/api/journal', require('./routes/journal'));
-app.use('/api/chart',   require('./routes/chart'));
+app.use('/api/scanner',   scannerRoutes);
+app.use('/api/news',      newsRoutes);
+app.use('/api/alerts',    alertRoutes);
+app.use('/api/pulse',     require('./routes/pulse'));
+app.use('/api/journal',   require('./routes/journal'));
+app.use('/api/chart',     require('./routes/chart'));
+app.use('/api/execution', require('./routes/execution'));  // Phase 5
 
-// Pulse snapshot
 app.get('/api/pulse/all', (req, res) => res.json(pulseStore));
 
 // ─── SPA FALLBACK ────────────────────────────────────────────────────────────
@@ -153,7 +118,6 @@ app.get('*', (req, res) => {
 const wsClients = new Map();
 
 wss.on('connection', (ws, req) => {
-  // Validate WS token from query string: wss://host?token=xxx
   try {
     const url      = new URL(req.url, 'http://localhost');
     const wsToken  = url.searchParams.get('token');
@@ -207,12 +171,6 @@ function broadcast(type, data) {
 }
 app.locals.broadcast = broadcast;
 
-// ─── POOL FILTERS ────────────────────────────────────────────────────────────
-
-// Phase 1: backend always scans against POOL_FILTERS (wide, 3% gap floor).
-// DISPLAY_FILTERS are frontend-only defaults applied at read time via
-// applyFilters() in index.html. Never pass DISPLAY_FILTERS to scanner.scan().
-
 // ─── DISCOVERY SCAN ──────────────────────────────────────────────────────────
 
 let scanRunning = false;
@@ -222,22 +180,12 @@ async function runScan() {
   scanRunning = true;
   try {
     const session = scanner.getMarketSession();
-
-    if (session === 'closed') {
-      console.log('[Scan] Market closed — skipping');
-      return;
-    }
-
+    if (session === 'closed') { console.log('[Scan] Market closed — skipping'); return; }
     const results    = await scanner.scan(POOL_FILTERS);
     const isDemoData = results?.length > 0 && results[0].ticker?.startsWith('DEMO');
-
-    if (!isDemoData) {
-      store.set(results || [], session);
-    }
-
+    if (!isDemoData) store.set(results || [], session);
     if (results?.length > 0 && !isDemoData) {
       broadcast('scan_results', results);
-
       const alerts = results.filter(s => s.breakingPmh || s.volumeSpike || s.newSetup);
       if (alerts.length > 0) {
         broadcast('alerts', alerts.map(s => ({
@@ -274,10 +222,7 @@ function scheduleScan() {
     scanTimer = setTimeout(scheduleScan, 600_000);
     return;
   }
-  scanTimer = setTimeout(async () => {
-    await runScan();
-    scheduleScan();
-  }, interval);
+  scanTimer = setTimeout(async () => { await runScan(); scheduleScan(); }, interval);
 }
 
 // ─── FAST PRICE REFRESH ──────────────────────────────────────────────────────
@@ -291,10 +236,8 @@ async function runPriceRefresh() {
   try {
     const tickers = store.getDisplayedTickers();
     if (!tickers.length) return;
-
     const updates = await scanner.refreshPrices(tickers);
     if (Object.keys(updates).length === 0) return;
-
     store.applyPriceUpdates(updates);
     broadcast('price_update', updates);
   } catch (err) {
@@ -317,14 +260,8 @@ function getPriceRefreshInterval() {
 function schedulePriceRefresh() {
   if (priceRefreshTimer) clearTimeout(priceRefreshTimer);
   const interval = getPriceRefreshInterval();
-  if (!interval) {
-    priceRefreshTimer = setTimeout(schedulePriceRefresh, 300_000);
-    return;
-  }
-  priceRefreshTimer = setTimeout(async () => {
-    await runPriceRefresh();
-    schedulePriceRefresh();
-  }, interval);
+  if (!interval) { priceRefreshTimer = setTimeout(schedulePriceRefresh, 300_000); return; }
+  priceRefreshTimer = setTimeout(async () => { await runPriceRefresh(); schedulePriceRefresh(); }, interval);
 }
 
 // ─── PULSE SCHEDULER ─────────────────────────────────────────────────────────
@@ -350,23 +287,19 @@ async function runPulseFetch() {
       const url = poly.startsWith('I:')
         ? `https://api.polygon.io/v2/snapshot/locale/us/markets/indices/tickers/${poly}?apiKey=${apiKey}`
         : `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers/${poly}?apiKey=${apiKey}`;
-
       const res       = await axios.get(url, { timeout: 8000 });
       const t         = res.data?.ticker || {};
       const day       = t.day     || {};
       const prev      = t.prevDay || {};
       const prevClose = prev.c    || 0;
-
       let price = 0;
       if (poly.startsWith('I:'))
         price = t.value || t.lastTrade?.p || day.c || 0;
       else
         price = t.lastTrade?.p || t.lastQuote?.P || day.c || prevClose || 0;
-
       const chgPct = (t.todaysChangePerc != null)
         ? parseFloat(t.todaysChangePerc.toFixed(2))
         : prevClose > 0 ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(2)) : 0;
-
       if (price > 0) {
         pulseStore[sym] = {
           price:     parseFloat(price.toFixed(2)),
@@ -375,8 +308,7 @@ async function runPulseFetch() {
           updatedAt: Date.now(),
         };
       }
-    } catch (e) { /* keep stale value */ }
-
+    } catch (e) { /* keep stale */ }
     await new Promise(r => setTimeout(r, 300));
   }
 
@@ -400,10 +332,7 @@ async function runPulseFetch() {
 let pulseTimer = null;
 function schedulePulse() {
   if (pulseTimer) clearTimeout(pulseTimer);
-  pulseTimer = setTimeout(async () => {
-    await runPulseFetch();
-    schedulePulse();
-  }, 60_000);
+  pulseTimer = setTimeout(async () => { await runPulseFetch(); schedulePulse(); }, 60_000);
 }
 
 // ─── STARTUP ─────────────────────────────────────────────────────────────────
@@ -411,7 +340,6 @@ function schedulePulse() {
 const PORT = process.env.PORT || 3000;
 
 (async () => {
-  // Hash passphrase before accepting any connections
   await initAuth();
 
   server.listen(PORT, async () => {
@@ -419,8 +347,8 @@ const PORT = process.env.PORT || 3000;
     console.log(`📡 WebSocket server active (token-protected)`);
     console.log(`🔒 Auth: httpOnly JWT cookie + CSRF token`);
     console.log(`🔑 Data source: ${process.env.DATA_SOURCE || 'demo'}`);
-    console.log(`📦 Store: wide scan pool via POOL_FILTERS, display filters applied client-side`);
-    console.log(`⚡ Price refresh: 10s pre-market, 5s market open (4am–10:30am ET)\n`);
+    console.log(`⚡ Price refresh: 10s pre-market, 5s market open (4am–10:30am ET)`);
+    console.log(`💹 Alpaca execution: ${process.env.ALPACA_MODE || 'paper'} mode\n`);
 
     await runScan();
     scheduleScan();
@@ -429,6 +357,9 @@ const PORT = process.env.PORT || 3000;
     schedulePulse();
 
     schedulePriceRefresh();
+
+    // Phase 5 — start order monitor, pass broadcast + wsClients
+    require('./services/orderMonitor').startMonitor(broadcast, wsClients);
   });
 })();
 
@@ -439,8 +370,5 @@ process.on('SIGTERM', () => {
   if (scanTimer)         clearTimeout(scanTimer);
   if (priceRefreshTimer) clearTimeout(priceRefreshTimer);
   if (pulseTimer)        clearTimeout(pulseTimer);
-  server.close(() => {
-    console.log('[Server] HTTP server closed');
-    process.exit(0);
-  });
+  server.close(() => { console.log('[Server] HTTP server closed'); process.exit(0); });
 });
