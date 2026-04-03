@@ -88,7 +88,7 @@ const axios = require('axios');
 const POOL_FILTERS = {
   priceMin:     0.50,
   priceMax:     25.00,
-  gapMin:       3,
+  gapMin:       0,
   floatMax:     500_000_000,
   dollarVolMin: 0,
   floatRotMin:  0,
