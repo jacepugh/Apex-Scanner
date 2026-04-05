@@ -1,6 +1,6 @@
 /* ── app.js — state, auth, API, WebSocket, nav, clock ── */
 
-'use strict';
+
 
 // ── CONFIG ────────────────────────────────────────────────
 const BACKEND    = '';
