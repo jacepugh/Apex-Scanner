@@ -36,17 +36,25 @@ const STOCK_MAP   = {};
 const CHART_CACHE = {};
 
 // ── AUTH ────────────────────────────────────────────────
-// Backend uses httpOnly cookie (sb_session) set on login.
-// Browser sends it automatically — we just need credentials:'include'.
-// No JS-side token storage needed or possible (httpOnly = invisible to JS).
+// Backend uses:
+//   - httpOnly cookie (sb_session) for HTTP requests
+//   - wsToken JWT (returned in login body) for WebSocket ?token= param
+//   - csrfToken (returned in login body) for X-CSRF-Token header on mutations
 
+let _wsToken   = '';
+let _csrfToken = '';
 let _bootComplete = false;
 
 async function apiFetch(url, opts = {}) {
+  const headers = { ...(opts.headers || {}) };
+  // Attach CSRF token on any mutating request
+  if (_csrfToken && opts.method && opts.method !== 'GET') {
+    headers['X-CSRF-Token'] = _csrfToken;
+  }
   const res = await fetch(BACKEND + url, {
     ...opts,
-    credentials: 'include',
-    headers: { ...(opts.headers || {}) },
+    credentials: 'include',   // sends sb_session httpOnly cookie
+    headers,
   });
   if (res.status === 401) {
     if (_bootComplete) handleUnauth();
@@ -56,6 +64,8 @@ async function apiFetch(url, opts = {}) {
 }
 
 function handleUnauth() {
+  _wsToken      = '';
+  _csrfToken    = '';
   _bootComplete = false;
   document.getElementById('login-screen').classList.remove('hidden');
 }
@@ -73,10 +83,10 @@ async function submitLogin() {
   input.classList.remove('error');
   try {
     const res = await fetch(BACKEND + '/api/auth/login', {
-      method: 'POST',
-      credentials: 'include',                    // backend sets sb_session cookie here
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ passphrase: pass }),
+      method:      'POST',
+      credentials: 'include',
+      headers:     { 'Content-Type': 'application/json' },
+      body:        JSON.stringify({ passphrase: pass }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -84,7 +94,9 @@ async function submitLogin() {
       err.textContent = data.error || 'Invalid passphrase';
       return;
     }
-    // Cookie is now set by the browser automatically — just boot
+    // Store tokens returned in body — cookie is set automatically by browser
+    _wsToken   = data.wsToken   || '';
+    _csrfToken = data.csrfToken || '';
     document.getElementById('login-screen').classList.add('hidden');
     bootApp();
   } catch (e) {
@@ -135,9 +147,12 @@ function showPage(name) {
 
 // ── WEBSOCKET ───────────────────────────────────────────
 function connectWS() {
+  if (!_wsToken) {
+    console.warn('[WS] No wsToken available — skipping WebSocket connection');
+    return;
+  }
   try {
-    // Cookies are sent automatically on same-origin WS upgrades
-    const ws = new WebSocket(WS_BACKEND);
+    const ws = new WebSocket(WS_BACKEND + '?token=' + encodeURIComponent(_wsToken));
     ws.onopen = () => { updateConnStatus(true); updateClock(); };
     ws.onmessage = e => {
       try {
@@ -176,6 +191,7 @@ function connectWS() {
     ws.onclose = e => {
       if (e.code === 4401) { handleUnauth(); return; }
       updateConnStatus(false);
+      // Reconnect with same token — it's valid for 24h
       setTimeout(connectWS, 5000);
     };
     ws.onerror = () => {};
@@ -269,7 +285,6 @@ function bootApp() {
     .then(r => r.json())
     .then(pos => { EXEC_STATE.position = pos; updateExecNavDot(); })
     .catch(() => {});
-  // Only start enforcing auth after boot calls have settled
   setTimeout(() => { _bootComplete = true; }, 4000);
 }
 
@@ -281,7 +296,7 @@ function init() {
 }
 
 // ── HELPERS ──────────────────────────────────────────────
-function fmt(n)  {
+function fmt(n) {
   if (!n && n !== 0) return '—';
   if (n >= 1e9) return (n/1e9).toFixed(1) + 'B';
   if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
