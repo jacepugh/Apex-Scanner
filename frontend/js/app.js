@@ -289,7 +289,6 @@ function bootApp() {
 }
 
 function init() {
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
   updateClock();
   setInterval(updateClock, 1000);
   setTimeout(() => document.getElementById('login-passphrase')?.focus(), 100);
