@@ -1,6 +1,6 @@
 /* ── pulse.js — market context tiles ── */
 
-'use strict';
+
 
 // UVXY replaces VIX (Polygon Starter doesn't carry $VIX index)
 const PULSE_TICKERS = [
