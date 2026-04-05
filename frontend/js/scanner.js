@@ -1,6 +1,6 @@
 /* ── scanner.js — filter bar, card rendering, chart, A-setup scoring ── */
 
-'use strict';
+
 
 // ── FILTER BAR ───────────────────────────────────────────
 function initFilterBar() {
