@@ -41,25 +41,33 @@ const CHART_CACHE = {};
 
 // ── AUTH ────────────────────────────────────────────────
 let _authToken = '';
-
-function setToken(t) { _authToken = t; }
-function getToken()  { return _authToken; }
+let _authSetAt = 0;        // timestamp when token was set
+let _bootComplete = false; // true once bootApp() finishes initial setup
 
 function getWsToken() {
-  const el = document.getElementById('login-passphrase');
-  return _authToken || el?.dataset?.token || '';
+  return _authToken;
 }
 
 async function apiFetch(url, opts = {}) {
   const headers = { ...(opts.headers || {}) };
   if (_authToken) headers['Authorization'] = 'Bearer ' + _authToken;
   const res = await fetch(BACKEND + url, { ...opts, headers });
-  if (res.status === 401) { handleUnauth(); throw new Error('Unauthenticated'); }
+  if (res.status === 401) {
+    // Only kick to login if boot is complete AND token is at least 5s old.
+    // Prevents a slow /api/journal or /api/execution/position during boot
+    // from bouncing the user back immediately after a valid login.
+    if (_bootComplete && (Date.now() - _authSetAt > 5000)) {
+      handleUnauth();
+    }
+    throw new Error('Unauthenticated');
+  }
   return res;
 }
 
 function handleUnauth() {
-  _authToken = '';
+  _authToken   = '';
+  _authSetAt   = 0;
+  _bootComplete = false;
   document.getElementById('login-screen').classList.remove('hidden');
 }
 
@@ -83,7 +91,7 @@ async function submitLogin() {
     const data = await res.json();
     if (!res.ok) { input.classList.add('error'); err.textContent = data.error || 'Invalid passphrase'; return; }
     _authToken = data.token;
-    input.dataset.token = data.token;
+    _authSetAt = Date.now();
     document.getElementById('login-screen').classList.add('hidden');
     bootApp();
   } catch (e) {
@@ -271,6 +279,8 @@ function bootApp() {
     .then(r => r.json())
     .then(pos => { EXEC_STATE.position = pos; updateExecNavDot(); })
     .catch(() => {});
+  // Mark boot complete after a generous delay — any 401s before this are ignored
+  setTimeout(() => { _bootComplete = true; }, 6000);
 }
 
 function init() {
