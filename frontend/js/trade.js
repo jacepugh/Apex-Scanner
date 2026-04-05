@@ -1,6 +1,6 @@
 /* ── trade.js — combined sizer + exec tab ── */
 
-'use strict';
+
 
 let sizerAccount = parseFloat(localStorage.getItem('sb_account') || '700');
 let sizerRiskPct = parseFloat(localStorage.getItem('sb_risk')    || '0.015');
