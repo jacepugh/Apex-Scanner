@@ -1,6 +1,6 @@
 /* ── journal.js — tabbed journal: History, Calendar, Chart ── */
 
-'use strict';
+
 
 let journalTrades = [];
 let journalTab = 'history';
