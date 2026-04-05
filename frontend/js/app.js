@@ -7,7 +7,7 @@ const BACKEND    = '';
 const WS_BACKEND = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host;
 
 // ── STATE ────────────────────────────────────────────────
-const STATE = {
+var STATE = {
   stocks:          [],
   currentPage:     'scanner',
   isLive:          false,
@@ -31,9 +31,9 @@ const STATE = {
   },
 };
 
-const EXEC_STATE  = { position: null, currentPx: {} };
-const STOCK_MAP   = {};
-const CHART_CACHE = {};
+var EXEC_STATE  = { position: null, currentPx: {} };
+var STOCK_MAP   = {};
+var CHART_CACHE = {};
 
 // ── AUTH ────────────────────────────────────────────────
 // Backend uses:
@@ -41,9 +41,9 @@ const CHART_CACHE = {};
 //   - wsToken JWT (returned in login body) for WebSocket ?token= param
 //   - csrfToken (returned in login body) for X-CSRF-Token header on mutations
 
-let _wsToken   = '';
-let _csrfToken = '';
-let _bootComplete = false;
+var _wsToken      = '';
+var _csrfToken    = '';
+var _bootComplete = false;
 
 async function apiFetch(url, opts = {}) {
   const headers = { ...(opts.headers || {}) };
