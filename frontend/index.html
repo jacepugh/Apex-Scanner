@@ -17,7 +17,14 @@
 </head>
 <body>
 
-<!-- ── ERROR BANNER ── -->
+<!-- Unregister any cached service worker immediately -->
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.unregister());
+  });
+}
+</script>
 <div id="errbanner"></div>
 <script>
 window.onerror = function(msg,src,line){
