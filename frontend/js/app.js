@@ -17,7 +17,7 @@ var STATE = {
   chartTf:         {},
   filters: {
     priceMin:     0.50,
-    priceMax:     25,
+    priceMax:     5,
     gapMin:       5,
     floatMax:     20_000_000,
     dollarVolMin: 0,
@@ -25,9 +25,9 @@ var STATE = {
     catalyst:     false,
   },
   presets: {
-    firstleg: { priceMin:0.50, priceMax:10,  gapMin:10, floatMax:10_000_000, dollarVolMin:0, floatRotMin:0 },
-    premarkt: { priceMin:0.50, priceMax:25,  gapMin:5,  floatMax:20_000_000, dollarVolMin:0, floatRotMin:0 },
-    midday:   { priceMin:1,    priceMax:25,  gapMin:3,  floatMax:50_000_000, dollarVolMin:0, floatRotMin:0 },
+    firstleg: { priceMin:0.50, priceMax:5,   gapMin:10, floatMax:10_000_000, dollarVolMin:500000,  floatRotMin:0 },
+    premarkt: { priceMin:0.50, priceMax:5,   gapMin:5,  floatMax:20_000_000, dollarVolMin:0,       floatRotMin:0 },
+    midday:   { priceMin:1,    priceMax:5,   gapMin:3,  floatMax:50_000_000, dollarVolMin:0,       floatRotMin:0 },
   },
 };
 
