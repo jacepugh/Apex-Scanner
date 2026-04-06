@@ -1,7 +1,5 @@
 /* ── trade.js — combined sizer + exec tab ── */
 
-
-
 let sizerAccount = parseFloat(localStorage.getItem('sb_account') || '700');
 let sizerRiskPct = parseFloat(localStorage.getItem('sb_risk')    || '0.015');
 
@@ -74,12 +72,12 @@ function sizerCalc() {
   const shares  = Math.floor(riskAmt / rDist);
   if (shares < 1) { warnEl.innerHTML = `⚠️ Stop too wide for ${(sizerRiskPct*100).toFixed(1)}% risk (${fmtD(riskAmt)}).`; warnEl.style.display = 'block'; resEl.style.display = 'none'; return; }
 
-  const posSize   = shares * entry;
+  const posSize    = shares * entry;
   const actualRisk = shares * rDist;
-  const target    = entry + rDist * 2;
-  const reward    = actualRisk * 2;
-  const rPct      = (actualRisk / sizerAccount) * 100;
-  const warns     = [];
+  const target     = entry + rDist * 2;
+  const reward     = actualRisk * 2;
+  const rPct       = (actualRisk / sizerAccount) * 100;
+  const warns      = [];
   if (posSize > sizerAccount * 0.5) warns.push(`⚠️ Position (${fmtD(posSize)}) > 50% of account.`);
   if (rPct > 3) warns.push(`⚠️ Risk is ${rPct.toFixed(1)}% — above 3%.`);
   if (warns.length) { warnEl.innerHTML = warns.join('<br><br>'); warnEl.style.display = 'block'; }
@@ -119,14 +117,14 @@ function renderExecSection() {
   if (!container) return;
   const pos = EXEC_STATE.position;
   if (!pos || pos.state === 'IDLE') {
-    container.innerHTML = '<div class="exec-idle-msg">⚡ No active position.<br/><br/>Size a trade above,<br/>tap a <strong style="color:var(--green)">BUY</strong> card in the scanner,<br/>then confirm here.</div>';
+    container.innerHTML = '<div class="exec-idle-msg">⚡ No active position.<br/><br/>Tap a <strong style="color:var(--green)">BUY</strong> card in the scanner,<br/>confirm the order,<br/>then monitor here.</div>';
     return;
   }
 
-  const r = pos.rLevels;
+  const r      = pos.rLevels;
   const isOpen = pos.state !== 'CLOSED';
-  const px = EXEC_STATE.currentPx[pos.ticker];
-  let pnlHtml = '<div class="exec-pnl-live zero">—</div>';
+  const px     = EXEC_STATE.currentPx[pos.ticker];
+  let pnlHtml  = '<div class="exec-pnl-live zero">—</div>';
   if (px && pos.fillPrice && pos.remainingQty) {
     const raw = (px - pos.fillPrice) * pos.remainingQty;
     pnlHtml = `<div class="exec-pnl-live ${raw > 0 ? 'pos' : raw < 0 ? 'neg' : 'zero'}">${raw >= 0 ? '+' : ''}$${Math.abs(raw).toFixed(2)}</div>`;
@@ -146,7 +144,7 @@ function renderExecSection() {
     </div>` : '';
 
   const logItems = [...(pos.sessionLog || [])].reverse().slice(0, 20);
-  const logHtml = logItems.length ? `
+  const logHtml  = logItems.length ? `
     <div class="exec-log-title">Session Log</div>
     ${logItems.map(l => `<div class="exec-log-item">${l}</div>`).join('')}` : '';
 
@@ -180,11 +178,11 @@ function renderExecSection() {
 }
 
 function buildCountdownHtml() {
-  const now  = new Date();
+  const now   = new Date();
   const etStr = now.toLocaleString('en-US', { timeZone:'America/New_York', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
   const [h,m,s] = etStr.split(':').map(Number);
   const nowMins = h * 60 + m + s / 60;
-  const diff = 630 - nowMins;
+  const diff    = 630 - nowMins;
   if (diff <= 0) return '<div class="exec-countdown warn">🔴 10:30am ET HARD EXIT TRIGGERED</div>';
   const mm = Math.floor(diff), ss = Math.floor((diff - mm) * 60);
   return `<div class="exec-countdown ${diff <= 5 ? 'warn' : ''}">⏱ 10:30am hard exit in ${mm}m ${ss.toString().padStart(2,'0')}s</div>`;
@@ -215,22 +213,34 @@ async function flattenNow() {
 }
 
 // ── CONFIRM SHEET ────────────────────────────────────────
-let _confirmTicker = '', _confirmShares = 0, _confirmStop = 0;
+// _confirmEntry stores the limit price used for extended-hours orders
+let _confirmTicker = '', _confirmShares = 0, _confirmStop = 0, _confirmEntry = 0;
 
 async function openConfirmSheet(ticker) {
   const s = STOCK_MAP[ticker];
   if (!s) return;
+
   const ez = calcEntryZone(s);
-  if (!ez) { alert('Cannot calculate entry zone for ' + ticker + ' — check PM High/Low data.'); return; }
-  const shares = parseInt(document.getElementById('sz-shares')?.textContent || '0');
-  if (!shares || shares < 1) { alert('Size the trade first — open the Trade tab, enter entry/stop, then tap Calculate.'); return; }
+  if (!ez) { alert('Cannot calculate entry zone for ' + ticker + ' — PM High/Low data unavailable.'); return; }
 
-  const entry = ez.entryHigh, stop = ez.stop, rDist = entry - stop;
-  const r1    = parseFloat((entry + rDist).toFixed(2));
-  const r2    = parseFloat((entry + rDist * 2).toFixed(2));
-  const risk  = parseFloat((shares * rDist).toFixed(2));
+  const entry  = ez.entryHigh;
+  const stop   = ez.stop;
+  const rDist  = entry - stop;
+  if (rDist <= 0) { alert('Invalid entry zone for ' + ticker); return; }
 
-  _confirmTicker = ticker; _confirmShares = shares; _confirmStop = stop;
+  // Auto-calculate shares from saved account + risk — no manual sizer step needed
+  const riskAmt = sizerAccount * sizerRiskPct;
+  const shares  = Math.max(1, Math.floor(riskAmt / rDist));
+
+  const r1   = parseFloat((entry + rDist).toFixed(2));
+  const r2   = parseFloat((entry + rDist * 2).toFixed(2));
+  const risk = parseFloat((shares * rDist).toFixed(2));
+
+  _confirmTicker = ticker;
+  _confirmShares = shares;
+  _confirmStop   = stop;
+  _confirmEntry  = entry;  // used as limit price during extended hours
+
   document.getElementById('cs-ticker').textContent  = ticker;
   document.getElementById('cs-shares').textContent  = shares + ' shares';
   document.getElementById('cs-entry').textContent   = '~$' + entry.toFixed(2);
@@ -239,12 +249,12 @@ async function openConfirmSheet(ticker) {
   document.getElementById('cs-2r').textContent      = '$' + r2.toFixed(2);
   document.getElementById('cs-risk').textContent    = '$' + risk.toFixed(2);
 
-  const buyBtn   = document.getElementById('cs-buy-btn');
+  const buyBtn    = document.getElementById('cs-buy-btn');
   const modeBadge = document.getElementById('cs-mode-badge');
-  const bpWarn   = document.getElementById('cs-bp-warning');
+  const bpWarn    = document.getElementById('cs-bp-warning');
   buyBtn.disabled = false; buyBtn.textContent = 'BUY'; buyBtn.classList.remove('live-mode');
   modeBadge.textContent = 'PAPER'; modeBadge.className = 'cs-mode-badge';
-  bpWarn.style.display = 'none';
+  bpWarn.style.display  = 'none';
   document.getElementById('confirm-overlay').classList.add('open');
 
   try {
@@ -256,7 +266,7 @@ async function openConfirmSheet(ticker) {
     if (live) { buyBtn.classList.add('live-mode'); buyBtn.textContent = '🔴 EXECUTE LIVE'; }
     const roughCost = shares * entry;
     if (roughCost > data.buyingPower) {
-      bpWarn.textContent = `⚠ Buying power $${data.buyingPower.toFixed(2)} may be low for ~$${roughCost.toFixed(2)} position.`;
+      bpWarn.textContent   = `⚠ Buying power $${data.buyingPower.toFixed(2)} may be low for ~$${roughCost.toFixed(2)} position.`;
       bpWarn.style.display = 'block';
     }
   } catch (e) {
@@ -270,10 +280,15 @@ async function submitBuy() {
   const btn = document.getElementById('cs-buy-btn');
   btn.disabled = true; btn.textContent = 'Placing order...';
   try {
-    const res  = await apiFetch('/api/execution/buy', {
-      method: 'POST',
+    const res = await apiFetch('/api/execution/buy', {
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ticker: _confirmTicker, shares: _confirmShares, stopPrice: _confirmStop }),
+      body:    JSON.stringify({
+        ticker:     _confirmTicker,
+        shares:     _confirmShares,
+        stopPrice:  _confirmStop,
+        limitPrice: _confirmEntry,   // required for pre/after market limit orders
+      }),
     });
     const data = await res.json();
     if (!res.ok) { alert('Order failed: ' + (data.detail || data.error)); btn.disabled = false; btn.textContent = 'BUY'; return; }
