@@ -44,6 +44,7 @@ var CHART_CACHE = {};
 var _wsToken      = '';
 var _csrfToken    = '';
 var _bootComplete = false;
+var _wsConnected  = false;  // tracks live WS — suppresses redundant HTTP poll
 
 async function apiFetch(url, opts = {}) {
   const headers = { ...(opts.headers || {}) };
@@ -67,6 +68,7 @@ function handleUnauth() {
   _wsToken      = '';
   _csrfToken    = '';
   _bootComplete = false;
+  _wsConnected  = false;
   document.getElementById('login-screen').classList.remove('hidden');
 }
 
@@ -153,7 +155,16 @@ function connectWS() {
   }
   try {
     const ws = new WebSocket(WS_BACKEND + '?token=' + encodeURIComponent(_wsToken));
-    ws.onopen = () => { updateConnStatus(true); updateClock(); };
+    ws.onopen = () => {
+      _wsConnected = true;
+      // WS is live — stop the HTTP poll to prevent stale data overwrites
+      if (STATE.refreshTimer) {
+        clearInterval(STATE.refreshTimer);
+        STATE.refreshTimer = null;
+      }
+      updateConnStatus(true);
+      updateClock();
+    };
     ws.onmessage = e => {
       try {
         const msg = JSON.parse(e.data);
@@ -189,8 +200,13 @@ function connectWS() {
       } catch (_) {}
     };
     ws.onclose = e => {
+      _wsConnected = false;
       if (e.code === 4401) { handleUnauth(); return; }
       updateConnStatus(false);
+      // WS dropped — restart HTTP poll as fallback until WS reconnects
+      if (!STATE.refreshTimer) {
+        STATE.refreshTimer = setInterval(fetchLiveData, STATE.refreshRate);
+      }
       // Reconnect with same token — it's valid for 24h
       setTimeout(connectWS, 5000);
     };
@@ -208,6 +224,10 @@ function updateConnStatus(live) {
 
 // ── FETCH ────────────────────────────────────────────────
 async function fetchLiveData() {
+  // Skip HTTP poll if WS is connected — WS pushes scan_results every 30s
+  // and price_update every 5s. HTTP poll would overwrite WS-patched prices.
+  if (_wsConnected) return;
+
   setScanningState('scanning');
   showSkeletons();
   try {
@@ -246,9 +266,12 @@ function closeSettings() { document.getElementById('settings-overlay').classList
 function setRefreshRate(ms) {
   const labels = { 8000:'8s', 15000:'15s', 30000:'30s', 60000:'60s' };
   document.querySelectorAll('.rate-pill').forEach(p => p.classList.toggle('active', p.textContent === labels[ms]));
-  clearInterval(STATE.refreshTimer);
   STATE.refreshRate = ms;
-  STATE.refreshTimer = setInterval(fetchLiveData, ms);
+  // Only restart the poll timer if WS is not connected
+  if (!_wsConnected) {
+    clearInterval(STATE.refreshTimer);
+    STATE.refreshTimer = setInterval(fetchLiveData, ms);
+  }
 }
 
 async function fetchAndShow(url, title) {
@@ -272,14 +295,18 @@ function closeApiResult() { document.getElementById('api-result-overlay').style.
 // ── BOOT ────────────────────────────────────────────────
 function bootApp() {
   _bootComplete = false;
+  _wsConnected  = false;
   journalLoad();
   updateClock();
   setInterval(updateClock, 1000);
   initFilterBar();
   initSizer();
   showPage('scanner');
+  // Initial HTTP fetch to populate cards immediately before WS connects
   fetchLiveData();
+  // Connect WS — on open it will cancel the poll timer below
   connectWS();
+  // Start poll as fallback; connectWS() cancels it once WS is established
   STATE.refreshTimer = setInterval(fetchLiveData, STATE.refreshRate);
   apiFetch('/api/execution/position')
     .then(r => r.json())
