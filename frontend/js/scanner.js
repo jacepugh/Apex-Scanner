@@ -4,14 +4,14 @@
 
 // ── FILTER BAR ───────────────────────────────────────────
 function initFilterBar() {
-  ['gap', 'float'].forEach(updateSliderDisplay);
-  loadPreset('premarkt');
+  ['gap', 'float', 'price', 'vol'].forEach(updateSliderDisplay);
+  applyDrawerFilters();
 }
 
 function toggleFilterBar() {
-  const bar     = document.getElementById('filter-bar');
-  const page    = document.getElementById('page-scanner');
-  const open    = bar.classList.toggle('expanded');
+  const bar  = document.getElementById('filter-bar');
+  const page = document.getElementById('page-scanner');
+  const open = bar.classList.toggle('expanded');
   page.classList.toggle('filters-expanded', open);
 }
 
@@ -19,41 +19,34 @@ function updateSliderDisplay(type) {
   const map = {
     gap:   { el: 'f-gap',   disp: 'fv-gap',   fn: v => v + '%' },
     float: { el: 'f-float', disp: 'fv-float',  fn: v => fmt(parseInt(v)) },
+    price: { el: 'f-price', disp: 'fv-price',  fn: v => '$' + parseFloat(v).toFixed(0) },
+    vol:   { el: 'f-vol',   disp: 'fv-vol',    fn: v => { const n = parseInt(v); return n >= 1e6 ? '$' + (n/1e6).toFixed(1) + 'M' : n >= 1e3 ? '$' + (n/1e3).toFixed(0) + 'K' : '$0'; } },
   };
   const m = map[type];
   if (!m) return;
-  document.getElementById(m.disp).textContent = m.fn(document.getElementById(m.el).value);
-}
-
-function loadPreset(name) {
-  const p = STATE.presets[name];
-  if (!p) return;
-  document.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('active'));
-  document.getElementById('preset-' + name)?.classList.add('active');
-  Object.assign(STATE.filters, p);
-  document.getElementById('f-gap').value   = p.gapMin;
-  document.getElementById('f-float').value = p.floatMax;
-  ['gap', 'float'].forEach(updateSliderDisplay);
-  // Auto-collapse filter bar after preset selection
-  const bar = document.getElementById('filter-bar');
-  const page = document.getElementById('page-scanner');
-  bar.classList.remove('expanded');
-  page.classList.remove('filters-expanded');
-  applyFilters();
+  const el = document.getElementById(m.el);
+  const disp = document.getElementById(m.disp);
+  if (el && disp) disp.textContent = m.fn(el.value);
 }
 
 function applyDrawerFilters() {
-  STATE.filters.gapMin   = parseFloat(document.getElementById('f-gap').value)   || 0;
-  STATE.filters.floatMax = parseInt(document.getElementById('f-float').value)    || 20_000_000;
+  STATE.filters.gapMin       = parseFloat(document.getElementById('f-gap').value)   || 0;
+  STATE.filters.floatMax     = parseInt(document.getElementById('f-float').value)    || 20_000_000;
+  STATE.filters.priceMax     = parseFloat(document.getElementById('f-price').value)  || 5;
+  STATE.filters.dollarVolMin = parseInt(document.getElementById('f-vol').value)      || 0;
   applyFilters();
 }
 
 function relaxFilters() {
-  STATE.filters.gapMin   = 0;
-  STATE.filters.floatMax = 50_000_000;
+  STATE.filters.gapMin       = 0;
+  STATE.filters.floatMax     = 50_000_000;
+  STATE.filters.priceMax     = 5;
+  STATE.filters.dollarVolMin = 0;
   document.getElementById('f-gap').value   = 0;
   document.getElementById('f-float').value = 50_000_000;
-  ['gap', 'float'].forEach(updateSliderDisplay);
+  document.getElementById('f-price').value = 5;
+  document.getElementById('f-vol').value   = 0;
+  ['gap', 'float', 'price', 'vol'].forEach(updateSliderDisplay);
   applyFilters();
 }
 
@@ -64,6 +57,7 @@ function applyFilters() {
     if (s.price < f.priceMin || s.price > f.priceMax) return false;
     if (s.prevClose > 0 && s.gapPct < f.gapMin) return false;
     if (s.floatShares > 0 && s.floatShares > f.floatMax) return false;
+    if (f.dollarVolMin > 0 && (s.dollarVolume || 0) < f.dollarVolMin) return false;
     if (f.catalyst && !s.catalyst) return false;
     return true;
   });
