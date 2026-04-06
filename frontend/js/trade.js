@@ -12,6 +12,25 @@ function initSizer() {
   document.getElementById('sz-account-display').textContent = '$' + sizerAccount.toLocaleString('en-US', { maximumFractionDigits: 0 });
   const savedLabel = (sizerRiskPct * 100).toString().replace(/\.0$/, '') + '%';
   document.querySelectorAll('.risk-btn').forEach(b => b.classList.toggle('active', b.textContent === savedLabel));
+  syncAccountFromAlpaca();
+}
+
+async function syncAccountFromAlpaca() {
+  try {
+    const res  = await apiFetch('/api/account/equity');
+    const data = await res.json();
+    if (!res.ok || !data.equity) return;
+    if (Math.abs(data.equity - sizerAccount) > 1) {
+      sizerAccount = data.equity;
+      localStorage.setItem('sb_account', sizerAccount);
+      document.getElementById('sz-account').value = sizerAccount;
+      document.getElementById('sz-account-display').textContent =
+        '$' + sizerAccount.toLocaleString('en-US', { maximumFractionDigits: 0 });
+      sizerCalc();
+    }
+  } catch (e) {
+    // Silent fail — localStorage value holds
+  }
 }
 
 function sizerUpdateAccount() {
