@@ -74,12 +74,12 @@ window.addEventListener('unhandledrejection',function(e){
     <div class="filter-chevron">▼</div>
   </div>
   <div class="filter-body">
-    <div class="filter-presets">
-      <div class="preset-chip" id="preset-firstleg" onclick="loadPreset('firstleg')">FIRST LEG</div>
-      <div class="preset-chip active" id="preset-premarkt" onclick="loadPreset('premarkt')">PRE-MKT</div>
-      <div class="preset-chip" id="preset-midday" onclick="loadPreset('midday')">MIDDAY</div>
-    </div>
     <div class="filter-sliders">
+      <div class="filter-slider-row">
+        <div class="fsr-label">MAX PRICE</div>
+        <input type="range" id="f-price" min="1" max="25" step="1" value="5" oninput="updateSliderDisplay('price');applyDrawerFilters()"/>
+        <div class="fsr-val" id="fv-price">$5</div>
+      </div>
       <div class="filter-slider-row">
         <div class="fsr-label">MIN GAP</div>
         <input type="range" id="f-gap" min="0" max="50" value="5" oninput="updateSliderDisplay('gap');applyDrawerFilters()"/>
@@ -89,6 +89,11 @@ window.addEventListener('unhandledrejection',function(e){
         <div class="fsr-label">MAX FLOAT</div>
         <input type="range" id="f-float" min="0" max="100000000" step="1000000" value="20000000" oninput="updateSliderDisplay('float');applyDrawerFilters()"/>
         <div class="fsr-val" id="fv-float">20M</div>
+      </div>
+      <div class="filter-slider-row">
+        <div class="fsr-label">MIN VOL $</div>
+        <input type="range" id="f-vol" min="0" max="5000000" step="100000" value="0" oninput="updateSliderDisplay('vol');applyDrawerFilters()"/>
+        <div class="fsr-val" id="fv-vol">$0</div>
       </div>
     </div>
   </div>
@@ -263,7 +268,7 @@ window.addEventListener('unhandledrejection',function(e){
     <div class="pulse-tile" id="pt-SPY"><div class="pt-sym">SPY</div><div class="pt-name">S&amp;P 500 ETF</div><div class="pt-price pt-loading">—</div><div class="pt-chg">—</div></div>
     <div class="pulse-tile" id="pt-QQQ"><div class="pt-sym">QQQ</div><div class="pt-name">NASDAQ ETF</div><div class="pt-price pt-loading">—</div><div class="pt-chg">—</div></div>
     <div class="pulse-tile" id="pt-IWM"><div class="pt-sym">IWM</div><div class="pt-name">Small Cap ETF</div><div class="pt-price pt-loading">—</div><div class="pt-chg">—</div></div>
-    <div class="pulse-tile" id="pt-UVXY"><div class="pt-sym">UVXY</div><div class="pt-name">Volatility Proxy</div><div class="pt-price pt-loading">—</div><div class="pt-chg">—</div></div>
+    <div class="pulse-tile" id="pt-VIX"><div class="pt-sym">VIX</div><div class="pt-name">Volatility Index</div><div class="pt-price pt-loading">—</div><div class="pt-chg">—</div></div>
     <div class="pulse-tile" id="pt-XBI"><div class="pt-sym">XBI</div><div class="pt-name">Biotech ETF</div><div class="pt-price pt-loading">—</div><div class="pt-chg">—</div></div>
     <div class="pulse-tile" id="pt-BTC"><div class="pt-sym">BTC</div><div class="pt-name">Bitcoin — Risk Sentiment</div><div class="pt-price pt-loading">—</div><div class="pt-chg">—</div></div>
   </div>
