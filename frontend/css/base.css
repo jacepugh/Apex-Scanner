@@ -189,7 +189,7 @@ html, body {
   top: calc(var(--safe-top) + var(--header-h) + var(--filter-h));
 }
 #page-scanner.filters-expanded {
-  top: calc(var(--safe-top) + var(--header-h) + 152px);
+  top: calc(var(--safe-top) + var(--header-h) + 210px);
 }
 
 /* ── FILTER BAR ── */
@@ -204,7 +204,7 @@ html, body {
   transition: height 0.3s cubic-bezier(0.4,0,0.2,1);
   height: var(--filter-h);
 }
-#filter-bar.expanded { height: 152px; }
+#filter-bar.expanded { height: 210px; }
 
 .filter-toggle-row {
   display: flex;
